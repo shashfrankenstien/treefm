@@ -22,7 +22,9 @@ typedef struct tdirlist {
 
 // function signatures
 tdirlist* listdir(const char*);
+void free_tfile(tfile*);
 void free_tdirlist(tdirlist*);
 void sortnames(tfile*, const int);
 tfile* sort(tfile*, int, tfile*, int);
-
+tfile* get_tfile(tdirlist*, int);
+short get_tfile_colorpair(tdirlist*, int);

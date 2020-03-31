@@ -9,14 +9,16 @@
 
 
 // function implementations
+void free_tfile(tfile* f)
+{
+	free((char*)f->fullpath);
+	free(f->st);
+}
 
 void free_tdirlist(tdirlist* d)
 {
 	for (int i=0; i < d->dirs_count+d->files_count; i++)
-	{
-		free((char*)d->files[i].fullpath);
-		free(d->files[i].st);
-	}
+		free_tfile(&d->files[i]);
 	free(d->files);
 	free(d);
 }
@@ -27,10 +29,10 @@ void sortnames(tfile* d, const int len) //bubble sort
 	tfile tmp;
 	bool swapped = false; //setup swapped flag
 	for (int i=0; i<len-1; i++)
-	{	
+	{
 		int comp = strcmp(d[i].name, d[i+1].name);
 		if (comp > 0)
-		{//swap	
+		{//swap
 			tmp = d[i+1];
 			d[i+1] = d[i];
 			d[i] = tmp;
@@ -79,10 +81,10 @@ tdirlist* listdir(const char* cpath)
 			const char* fullpath = realpath(combined, NULL);
 			struct stat* st = (struct stat*)malloc(sizeof(struct stat));
 			stat(fullpath, st);
-			
+
 			if (dir->d_type==DT_DIR)
 			{// if directory
-				if (dirs_count==dirs_cap) 
+				if (dirs_count==dirs_cap)
 				{// limit reached, reallocate array
 					dirs_cap *= 2;
 					dirs = realloc(dirs, sizeof(tfile)*dirs_cap);
@@ -96,7 +98,7 @@ tdirlist* listdir(const char* cpath)
 				dirs[dirs_count].isexe = false;
 				dirs[dirs_count]._color_pair = DIR_COLOR;
 				dirs_count++;
-			} 
+			}
 			else
 			{// if not directory
 				if (files_count==files_cap)
@@ -111,11 +113,14 @@ tdirlist* listdir(const char* cpath)
 				files[files_count].fullpath = fullpath;
 				files[files_count].isdir = false;
 				files[files_count].isexe = (st->st_mode & S_IXUSR || st->st_mode & S_IXGRP || st->st_mode & S_IXOTH);
-				files[files_count]._color_pair = (files[files_count].isexe) ? EXE_COLOR : NORM_COLOR;
+				if (files[files_count].isexe)
+					files[files_count]._color_pair = EXE_COLOR;
+				else
+					files[files_count]._color_pair = NORM_COLOR;
 				files_count++;
 			}
-		}	
-		
+		}
+
 		out->files = sort(dirs, dirs_count, files, files_count);
 		out->dirs_count = dirs_count;
 		out->files_count = files_count;
@@ -123,4 +128,24 @@ tdirlist* listdir(const char* cpath)
 	}
 	return out;
 }
+
+
+tfile* get_tfile(tdirlist* d, int idx)
+{
+	int maxidx = d->dirs_count + d->files_count - 1;
+	if (idx >= 0 && idx <= maxidx)
+		return &d->files[idx];
+	else
+		return NULL;
+}
+
+short get_tfile_colorpair(tdirlist* d, int idx)
+{
+	tfile* f = get_tfile(d, idx);
+	if (f)
+		return f->_color_pair;
+	else
+		return 0;
+}
+
 
