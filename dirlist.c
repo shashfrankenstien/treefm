@@ -57,6 +57,14 @@ tfile* sort(tfile* dirs, int dirs_count, tfile* files, int files_count)
 }
 
 
+void joinpath(const char* dirname, const char* basename, char* buf)
+{
+	strcpy(buf, dirname);
+	strcat(buf, "/");
+	strcat(buf, basename);
+}
+
+
 tdirlist* listdir(const char* cpath)
 {
 	DIR *d;
@@ -66,6 +74,8 @@ tdirlist* listdir(const char* cpath)
 	tfile* dirs = (tfile*) malloc(sizeof(tfile)*dirs_cap);
 	tfile* files = (tfile*) malloc(sizeof(tfile)*files_cap);
 	tdirlist* out = (tdirlist*)malloc(sizeof(tdirlist));
+	strcpy(out->cwd, cpath);
+	//out->cwd = (char*)cpath;
 
 	d = opendir(cpath);
 	if (d)
@@ -75,9 +85,7 @@ tdirlist* listdir(const char* cpath)
 		while ((dir = readdir(d))!=NULL)
 		{
 			char combined[strlen(cpath) + strlen(dir->d_name) + 2];
-			strcpy(combined, cpath);
-			strcat(combined, "/");
-			strcat(combined, dir->d_name);
+			joinpath(cpath, dir->d_name, combined);
 			const char* fullpath = realpath(combined, NULL);
 			struct stat* st = (struct stat*)malloc(sizeof(struct stat));
 			stat(fullpath, st);

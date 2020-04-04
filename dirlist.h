@@ -1,3 +1,5 @@
+#include <linux/limits.h>
+
 
 typedef struct tfile {
 	char name[256];
@@ -12,6 +14,7 @@ typedef struct tfile {
 
 
 typedef struct tdirlist {
+	char cwd[PATH_MAX];
 	tfile* files;
 	int dirs_count;
 	int files_count;
@@ -28,3 +31,5 @@ void sortnames(tfile*, const int);
 tfile* sort(tfile*, int, tfile*, int);
 tfile* get_tfile(tdirlist*, int);
 short get_tfile_colorpair(tdirlist*, int);
+
+void joinpath(const char*, const char*, char*);

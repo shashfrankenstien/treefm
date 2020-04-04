@@ -26,6 +26,13 @@ typedef struct tree_app {
 	twinprops brw_props;
 	twinprops cmd_props;
 	twinprops preview_props;
+	
+	char cmdtxt_l[100];
+	char cmdtxt_r[100];
+	char header_l[100];
+	char header_r[100];
+	char footer_l[100];
+	char footer_r[100];
 } tree_app;
 
 
@@ -42,9 +49,11 @@ WINDOW* create_win_from_props(twinprops* props);
 void destroy_win(WINDOW*);
 
 void _fmt_fsize(long int, char*);
-void show_row(tfile, WINDOW*, int, int, int);
 void _write_cmd(tree_app*, char*, e_horizontal);
+void _write_header(tree_app*, char*, e_horizontal);
+void _write_footer(tree_app*, char*, e_horizontal);
 
+void show_row(tfile, WINDOW*, int, int, int);
 void show_tdirlist(tdirlist*, tree_app*);
 int navigator(tdirlist*, tree_app*);
 void browse(tdirlist*, tree_app*, e_vertical);
@@ -132,17 +141,25 @@ void show_row(tfile f, WINDOW* win, int curr, int curc, int maxc)
 
 void show_tdirlist(tdirlist* d, tree_app* app)
 {
+	erase();
+	werase(app->browser);
+	werase(app->cmd);
 	int maxc = app->brw_props.cols - (2*app->brw_props.padc);
 	int curc = app->brw_props.startc + app->brw_props.padc;
 	int padr = app->brw_props.padr;
 
 	for (int r=0; r < (d->dirs_count+d->files_count); r++)
-	{
 		show_row(d->files[r], app->browser, r+padr, curc, maxc);
-	}
+	
 	mvwchgat(app->browser, d->curs_pos+padr, 0,
 		-1, A_REVERSE|A_BOLD,
 		get_tfile_colorpair(d, d->curs_pos), NULL);
+	
+	_write_header(app, d->cwd, LEFT);
+	_write_footer(app, d->cwd, LEFT);
+	char count[10];
+	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->dirs_count+d->files_count);
+	_write_cmd(app, count, RIGHT);
 }
 
 
@@ -165,6 +182,10 @@ void browse(tdirlist* d, tree_app* app, e_vertical vert)
 	mvwchgat(app->browser, cpos+padr, 0,
 		-1, A_REVERSE|A_BOLD,
 		get_tfile_colorpair(d, cpos), NULL);
+	
+	char count[10];
+	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->dirs_count+d->files_count);
+	_write_cmd(app, count, RIGHT);
 }
 
 
@@ -197,7 +218,7 @@ int navigator(tdirlist* d, tree_app* app)
 			browse(d, app, DOWN);
 			break;
 		}
-		char* c = &ch;
+		char* c = (char*)&ch;
 		_write_cmd(app, c, LEFT);
 		refresh_app(app);
 	}
@@ -207,13 +228,58 @@ int navigator(tdirlist* d, tree_app* app)
 
 void _write_cmd(tree_app* app, char* txt, e_horizontal align)
 {
-	int maxc = app->cmd_props.cols;
-	int padc = app->cmd_props.padc;
-	int startx = 0;
 	if (align==RIGHT)
-		startx = maxc-strlen(txt)-padc;
+		strcpy(app->cmdtxt_r, txt);
+	else
+		strcpy(app->cmdtxt_l, txt);
+	
+	int startr, maxc, padc;
+	maxc = app->cmd_props.cols;
+	padc = app->cmd_props.padc;
+	startr = maxc-strlen(app->cmdtxt_r)-padc;
+	wmove(app->cmd, 0, 0);
+	wclrtoeol(app->cmd);
 
-	mvwprintw(app->cmd, 0, startx, "%s", txt);
+	mvwprintw(app->cmd, 0, 0, "%s", app->cmdtxt_l);
+	mvwprintw(app->cmd, 0, startr, "%s", app->cmdtxt_r);
+}
+
+
+void _write_header(tree_app* app, char* txt, e_horizontal align)
+{
+	if (align==RIGHT)
+		strcpy(app->header_r, txt);
+	else
+		strcpy(app->header_l, txt);
+	
+	int startr, maxc, padc;
+	maxc = app->root_props.cols;
+	padc = app->cmd_props.padc;
+	startr = maxc-strlen(app->header_r)-padc;
+	wmove(stdscr, 0, 0);
+	wclrtoeol(stdscr);
+
+	mvwprintw(stdscr, 0, padc, "%s", app->header_l);
+	mvwprintw(stdscr, 0, startr, "%s", app->header_r);
+}
+
+void _write_footer(tree_app* app, char* txt, e_horizontal align)
+{
+	if (align==RIGHT)
+		strcpy(app->footer_r, txt);
+	else
+		strcpy(app->footer_l, txt);
+	
+	int startr, maxc, padc, row;
+	maxc = app->root_props.cols;
+	padc = app->cmd_props.padc;
+	row = app->cmd_props.startr - 1;
+	startr = maxc-strlen(app->footer_r)-padc;
+	wmove(stdscr, row, 0);
+	wclrtoeol(stdscr);
+
+	mvwprintw(stdscr, row, padc, "%s", app->footer_l);
+	mvwprintw(stdscr, row, startr, "%s", app->footer_r);
 }
 
 
@@ -247,12 +313,12 @@ tree_app* create_app()
 	};
 
 	twinprops bp = {
-		.rows = LINES - 1, /*-1 for command window*/
-		.cols = COLS,
-		.startr = 0,
-		.startc = 0,
-		.padr = main_border_r,
-		.padc = main_border_c
+		.rows = LINES - (2*main_border_r) - 1, /*-1 for command window*/
+		.cols = COLS - (2*main_border_c),
+		.startr = main_border_r,
+		.startc = main_border_c,
+		.padr = intern_pad_r,
+		.padc = intern_pad_c
 	};
 
 	twinprops cp = {
@@ -264,7 +330,7 @@ tree_app* create_app()
 		.padr = 0
 	};
 
-	//if (main_light_borders) wbkgd(stdscr, A_BOLD|COLOR_PAIR(INVNORM_COLOR));
+	if (main_light_borders) wbkgd(stdscr, A_BOLD|COLOR_PAIR(INVNORM_COLOR));
 	wborder(stdscr, ' ', ' ', ' ',' ',' ',' ',' ',' ');
 	refresh();
 	
@@ -300,17 +366,16 @@ void resize_app(tree_app* app)
 	{
 		app->root_props.rows += deltar;
 		app->brw_props.rows += deltar;
-		app->cmd_props.rows += deltar;
-		destroy_win(app->cmd);
 		app->cmd_props.startr += deltar;
-		app->cmd = create_win_from_props(&app->cmd_props);
+		mvwin(app->cmd, app->cmd_props.startr, 0);
 	}
 
-	wresize(app->browser, app->brw_props.rows, app->brw_props.cols);
 	wresize(app->cmd, app->cmd_props.rows, app->cmd_props.cols);
+	wresize(app->browser, app->brw_props.rows, app->brw_props.cols);
 
-	mvwprintw(stdscr, 0, newc-5, "%d,%d", newr, app->cmd_props.startr);
-	
+	char sz[10];
+	snprintf(sz, 10, "%d,%d", newr, newc);
+	_write_header(app, sz, RIGHT);
 }
 
 
@@ -337,10 +402,6 @@ int main(int argc, char* argv[])
 	d->curs_pos = 0; //cursor position on top of the list
 
 	tree_app* app = create_app();
-
-	mvwprintw(stdscr, 0, 0, "%s", p);
-	_write_cmd(app, "treefm", RIGHT);
-	
 	show_tdirlist(d, app);
 	refresh_app(app);
 
@@ -356,14 +417,10 @@ int main(int argc, char* argv[])
 
 			case RESIZE:
 			resize_app(app);
-			//erase();
-			werase(app->browser);
-			werase(app->cmd);
 			show_tdirlist(d, app);
 			refresh_app(app);
 		}
 	}
-
 	destroy_app(app);
 	curs_set(2); //0, 1 or 2
 	free_tdirlist(d);
