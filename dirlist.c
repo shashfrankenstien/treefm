@@ -1,7 +1,6 @@
 #include <stdlib.h> /*malloc, realloc, free, true, false*/
 #include <string.h> /*strcmp,strcpy,..*/
 #include <dirent.h>
-#include <limits.h> /*PATH_MAX*/
 #include <sys/stat.h>
 
 #include "utils.h" /*macros*/
@@ -75,7 +74,6 @@ tdirlist* listdir(const char* cpath)
 	tfile* files = (tfile*) malloc(sizeof(tfile)*files_cap);
 	tdirlist* out = (tdirlist*)malloc(sizeof(tdirlist));
 	strcpy(out->cwd, cpath);
-	//out->cwd = (char*)cpath;
 
 	d = opendir(cpath);
 	if (d)

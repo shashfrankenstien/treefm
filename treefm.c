@@ -9,7 +9,14 @@
 
 
 typedef enum {UP, DOWN} e_vertical;
-typedef enum {LEFT, RIGHT} e_horizontal;
+typedef enum {
+	RIGHT=1,
+	NEXT=1,
+	OPEN=1,
+	LEFT=0, 
+	PREV=0,
+	CLOSE=0
+} e_horizontal;
 
 typedef struct twinprops {
 	int rows, cols;
@@ -55,8 +62,9 @@ void _write_footer(tree_app*, char*, e_horizontal);
 
 void show_row(tfile, WINDOW*, int, int, int);
 void show_tdirlist(tdirlist*, tree_app*);
-int navigator(tdirlist*, tree_app*);
-void browse(tdirlist*, tree_app*, e_vertical);
+int kbd_events(tdirlist*, tree_app*);
+void vnavigate(tdirlist*, tree_app*, e_vertical);
+void hnavigate(tdirlist*, tree_app*, e_horizontal);
 
 
 #include "config.h"
@@ -163,7 +171,7 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 }
 
 
-void browse(tdirlist* d, tree_app* app, e_vertical vert)
+void vnavigate(tdirlist* d, tree_app* app, e_vertical vert)
 {
 	int cpos;
 	if (vert==DOWN)
@@ -188,8 +196,20 @@ void browse(tdirlist* d, tree_app* app, e_vertical vert)
 	_write_cmd(app, count, RIGHT);
 }
 
+void hnavigate(tdirlist* d, tree_app* app, e_horizontal hor)
+{
+	if (d->files[d->curs_pos].isdir)
+	{
+		char* npath = malloc(PATH_MAX*sizeof(char));
+		strcpy(npath, d->files[d->curs_pos].fullpath);
+		free_tdirlist(d);
+		d = listdir((const char*)npath);
+		d->curs_pos = 0;
+		show_tdirlist(d, app);
+	}
+}
 
-int navigator(tdirlist* d, tree_app* app)
+int kbd_events(tdirlist* d, tree_app* app)
 {
 	int ch;
 	while((ch = getch()) != KEY_F(1))
@@ -206,16 +226,17 @@ int navigator(tdirlist* d, tree_app* app)
 
 			case KEY_RIGHT:
 			case 'l':
+			hnavigate(d, app, RIGHT);
 			break;
 
 			case KEY_UP:
 			case 'k':
-			browse(d, app, UP);
+			vnavigate(d, app, UP);
 			break;
 
 			case KEY_DOWN:
 			case 'j':
-			browse(d, app, DOWN);
+			vnavigate(d, app, DOWN);
 			break;
 		}
 		char* c = (char*)&ch;
@@ -409,7 +430,7 @@ int main(int argc, char* argv[])
 	bool exit = false;
 	while (!exit)
 	{
-		action = navigator(d, app);
+		action = kbd_events(d, app);
 		switch (action)
 		{
 			case EXIT:

@@ -19,6 +19,4 @@
 typedef enum {
 	EXIT,
 	RESIZE,
-	BACK,
-	NEXT
 } e_browser_acts;
