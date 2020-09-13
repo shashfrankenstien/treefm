@@ -13,7 +13,7 @@ typedef enum {
 	RIGHT=1,
 	NEXT=1,
 	OPEN=1,
-	LEFT=0, 
+	LEFT=0,
 	PREV=0,
 	CLOSE=0
 } e_horizontal;
@@ -33,7 +33,7 @@ typedef struct tree_app {
 	twinprops brw_props;
 	twinprops cmd_props;
 	twinprops preview_props;
-	
+
 	char cmdtxt_l[100];
 	char cmdtxt_r[100];
 	char header_l[100];
@@ -139,7 +139,7 @@ void show_row(tfile f, WINDOW* win, int curr, int curc, int maxc)
 		wattron(win, A_BOLD | COLOR_PAIR(f._color_pair));
 
 	char sz[] = "00000";
-	_fmt_fsize(f.st->st_size, sz);
+	_fmt_fsize(f.st.st_size, sz);
 	mvwprintw(win, curr, curc, "%s", f.name);
 	mvwprintw(win, curr, maxc-strlen(sz), "%s", sz);
 
@@ -156,17 +156,17 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 	int curc = app->brw_props.startc + app->brw_props.padc;
 	int padr = app->brw_props.padr;
 
-	for (int r=0; r < (d->dirs_count+d->files_count); r++)
+	for (int r=0; r < d->files_count; r++)
 		show_row(d->files[r], app->browser, r+padr, curc, maxc);
-	
+
 	mvwchgat(app->browser, d->curs_pos+padr, 0,
 		-1, A_REVERSE|A_BOLD,
 		get_tfile_colorpair(d, d->curs_pos), NULL);
-	
+
 	_write_header(app, d->cwd, LEFT);
 	_write_footer(app, d->cwd, LEFT);
 	char count[10];
-	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->dirs_count+d->files_count);
+	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
 	_write_cmd(app, count, RIGHT);
 }
 
@@ -175,7 +175,7 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical vert)
 {
 	int cpos;
 	if (vert==DOWN)
-		cpos = iMIN(d->curs_pos + 1, (d->dirs_count + d->files_count - 1));
+		cpos = iMIN(d->curs_pos + 1, (d->files_count - 1));
 	else
 		cpos = iMAX(d->curs_pos - 1, 0);
 
@@ -190,9 +190,9 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical vert)
 	mvwchgat(app->browser, cpos+padr, 0,
 		-1, A_REVERSE|A_BOLD,
 		get_tfile_colorpair(d, cpos), NULL);
-	
+
 	char count[10];
-	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->dirs_count+d->files_count);
+	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
 	_write_cmd(app, count, RIGHT);
 }
 
@@ -253,7 +253,7 @@ void _write_cmd(tree_app* app, char* txt, e_horizontal align)
 		strcpy(app->cmdtxt_r, txt);
 	else
 		strcpy(app->cmdtxt_l, txt);
-	
+
 	int startr, maxc, padc;
 	maxc = app->cmd_props.cols;
 	padc = app->cmd_props.padc;
@@ -272,7 +272,7 @@ void _write_header(tree_app* app, char* txt, e_horizontal align)
 		strcpy(app->header_r, txt);
 	else
 		strcpy(app->header_l, txt);
-	
+
 	int startr, maxc, padc;
 	maxc = app->root_props.cols;
 	padc = app->cmd_props.padc;
@@ -290,7 +290,7 @@ void _write_footer(tree_app* app, char* txt, e_horizontal align)
 		strcpy(app->footer_r, txt);
 	else
 		strcpy(app->footer_l, txt);
-	
+
 	int startr, maxc, padc, row;
 	maxc = app->root_props.cols;
 	padc = app->cmd_props.padc;
@@ -326,7 +326,7 @@ void init_curses()
 tree_app* create_app()
 {
 	init_curses(); // start root window
-	
+
 	tree_app* app = (tree_app*)malloc(sizeof(tree_app));
 	twinprops rp = {
 		.rows = LINES,
@@ -354,7 +354,7 @@ tree_app* create_app()
 	if (main_light_borders) wbkgd(stdscr, A_BOLD|COLOR_PAIR(INVNORM_COLOR));
 	wborder(stdscr, ' ', ' ', ' ',' ',' ',' ',' ',' ');
 	refresh();
-	
+
 	app->root_props = rp;
 	app->browser = create_win_from_props(&bp);
 	app->cmd = create_win_from_props(&cp);
@@ -379,7 +379,7 @@ void resize_app(tree_app* app)
 	getmaxyx(stdscr, newr, newc);
 	deltar = newr - app->root_props.rows;
 	deltac = newc - app->root_props.cols;
-	
+
 	app->root_props.cols += deltac;
 	app->brw_props.cols += deltac;
 	app->cmd_props.cols += deltac;
