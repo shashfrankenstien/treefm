@@ -92,7 +92,7 @@ tdirlist* listdir(const char* cpath)
 	int files_cap = 10;
 	tfile* files = (tfile*) malloc(sizeof(tfile)*files_cap);
 	tdirlist* out = (tdirlist*)malloc(sizeof(tdirlist));
-	strcpy(out->cwd, cpath);
+	realpath(cpath, out->cwd);
 
 	d = opendir(cpath);
 	if (d)

@@ -46,7 +46,7 @@ typedef struct tree_app {
 
 // function declarations
 void init_curses();
-tree_app* create_app();
+int create_app(tree_app* app);
 void refresh_app(tree_app* app);
 void resize_app(tree_app* app);
 void destroy_app(tree_app* app);
@@ -60,7 +60,7 @@ void _write_cmd(tree_app*, char*, e_horizontal);
 void _write_header(tree_app*, char*, e_horizontal);
 void _write_footer(tree_app*, char*, e_horizontal);
 
-void show_row(tfile, WINDOW*, int, int, int);
+void show_row(tfile*, WINDOW*, int, int, int);
 void show_tdirlist(tdirlist*, tree_app*);
 int kbd_events(tdirlist*, tree_app*);
 void vnavigate(tdirlist*, tree_app*, e_vertical);
@@ -133,18 +133,18 @@ void _fmt_fsize(long int sz, char* szstr)
 		snprintf(szstr, slen, "%.0fT", szf/1024./1024./1024./1024.);
 }
 
-void show_row(tfile f, WINDOW* win, int curr, int curc, int maxc)
+void show_row(tfile* f, WINDOW* win, int curr, int curc, int maxc)
 {
-	if (f._color_pair!=NORM_COLOR)
-		wattron(win, A_BOLD | COLOR_PAIR(f._color_pair));
+	if (f->_color_pair!=NORM_COLOR)
+		wattron(win, A_BOLD | COLOR_PAIR(f->_color_pair));
 
 	char sz[] = "00000";
-	_fmt_fsize(f.st.st_size, sz);
-	mvwprintw(win, curr, curc, "%s", f.name);
+	_fmt_fsize(f->st.st_size, sz);
+	mvwprintw(win, curr, curc, "%s", f->name);
 	mvwprintw(win, curr, maxc-strlen(sz), "%s", sz);
 
-	if (f._color_pair!=NORM_COLOR)
-		wattroff(win, A_BOLD | COLOR_PAIR(f._color_pair));
+	if (f->_color_pair!=NORM_COLOR)
+		wattroff(win, A_BOLD | COLOR_PAIR(f->_color_pair));
 }
 
 void show_tdirlist(tdirlist* d, tree_app* app)
@@ -157,7 +157,7 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 	int padr = app->brw_props.padr;
 
 	for (int r=0; r < d->files_count; r++)
-		show_row(d->files[r], app->browser, r+padr, curc, maxc);
+		show_row(&d->files[r], app->browser, r+padr, curc, maxc);
 
 	mvwchgat(app->browser, d->curs_pos+padr, 0,
 		-1, A_REVERSE|A_BOLD,
@@ -185,11 +185,11 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical vert)
 		gatp |= A_BOLD;
 
 	int padr = app->brw_props.padr; // vertical padding from config
-	mvwchgat(app->browser, d->curs_pos+padr, 0, -1, gatp, cp, NULL);
+	mvwchgat(app->browser, d->curs_pos+padr, 0, -1, gatp, cp, NULL); // reset color on prev position
 	d->curs_pos = cpos;
 	mvwchgat(app->browser, cpos+padr, 0,
 		-1, A_REVERSE|A_BOLD,
-		get_tfile_colorpair(d, cpos), NULL);
+		get_tfile_colorpair(d, cpos), NULL); // highlight new cursor position
 
 	char count[10];
 	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
@@ -323,17 +323,16 @@ void init_curses()
 	clear();
 }
 
-tree_app* create_app()
+int create_app(tree_app* app)
 {
 	init_curses(); // start root window
 
-	tree_app* app = (tree_app*)malloc(sizeof(tree_app));
-	twinprops rp = {
+	twinprops rp = { //root
 		.rows = LINES,
 		.cols = COLS,
 	};
 
-	twinprops bp = {
+	twinprops bp = { //browser
 		.rows = LINES - (2*main_border_r) - 1, /*-1 for command window*/
 		.cols = COLS - (2*main_border_c),
 		.startr = main_border_r,
@@ -342,7 +341,7 @@ tree_app* create_app()
 		.padc = intern_pad_c
 	};
 
-	twinprops cp = {
+	twinprops cp = { //command
 		.rows = 1,
 		.cols = COLS,
 		.startr = LINES-1,
@@ -361,7 +360,7 @@ tree_app* create_app()
 	app->brw_props = bp;
 	app->cmd_props = cp;
 
-	return app;
+	return 0;
 }
 
 
@@ -404,7 +403,6 @@ void destroy_app(tree_app* app)
 {
 	destroy_win(app->browser);
 	destroy_win(app->cmd);
-	free(app);
 	refresh(); //paint screen
 	endwin(); //end curses mode
 	curs_set(2); //0, 1 or 2
@@ -422,27 +420,29 @@ int main(int argc, char* argv[])
 	tdirlist* d = listdir(p);
 	d->curs_pos = 0; //cursor position on top of the list
 
-	tree_app* app = create_app();
-	show_tdirlist(d, app);
-	refresh_app(app);
+	tree_app app;
+	create_app(&app);
+
+	show_tdirlist(d, &app);
+	refresh_app(&app);
 
 	int action;
 	bool exit = false;
 	while (!exit)
 	{
-		action = kbd_events(d, app);
+		action = kbd_events(d, &app);
 		switch (action)
 		{
 			case EXIT:
 			exit = true;
 
 			case RESIZE:
-			resize_app(app);
-			show_tdirlist(d, app);
-			refresh_app(app);
+			resize_app(&app);
+			show_tdirlist(d, &app);
+			refresh_app(&app);
 		}
 	}
-	destroy_app(app);
+	destroy_app(&app);
 	curs_set(2); //0, 1 or 2
 	free_tdirlist(d);
 }
