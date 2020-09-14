@@ -1,6 +1,9 @@
+#include <stdio.h>
+
 #include <stdlib.h> /*malloc, realloc, free, true, false*/
 #include <string.h> /*strcmp,strcpy,..*/
 #include <dirent.h>
+#include <errno.h>
 #include <sys/stat.h>
 
 #include "utils.h" /*macros*/
@@ -9,9 +12,20 @@
 
 // function implementations
 
+tdirlist* new_tdirlist()
+{
+	tdirlist* l = (tdirlist*)malloc(sizeof(tdirlist));
+	//setup default values
+	l->files = NULL;
+	l->files_count = 0;
+	l->curs_pos = 0;
+	l->err = 0;
+	return l;
+}
+
 void free_tdirlist(tdirlist* d)
 {
-	free(d->files);
+	if (d->files) free(d->files);
 	free(d);
 }
 
@@ -38,7 +52,7 @@ void sortname_ptrs(tfile** d, const int len)
 }
 
 
-void sort_copy(tfile* d, const int len, tfile** dst)
+void sort_copy(tfile* d, const int len, tfile* dst)
 {
 	tfile* dirs[len];
 	tfile* files[len];
@@ -54,14 +68,13 @@ void sort_copy(tfile* d, const int len, tfile** dst)
 	sortname_ptrs(&files[0], filecount);
 
 	int dstcounter = 0;
-	*dst = (tfile*) malloc(sizeof(tfile)*len);
 
 	for (int a=0; a<dircount; a++) {
-		(*dst)[dstcounter++] = *dirs[a];
+		dst[dstcounter++] = *dirs[a];
 		// printf("dir %s\n", dirs[a]->name);
 	}
 	for (int a=0; a<filecount; a++) {
-		(*dst)[dstcounter++] = *files[a];
+		dst[dstcounter++] = *files[a];
 		// printf("file %s\n", files[a]->name);
 	}
 }
@@ -90,13 +103,13 @@ tdirlist* listdir(const char* cpath)
 	DIR *d;
 	struct dirent *dir;
 	int files_cap = 10;
-	tfile* files = (tfile*) malloc(sizeof(tfile)*files_cap);
-	tdirlist* out = (tdirlist*)malloc(sizeof(tdirlist));
+	tdirlist* out = new_tdirlist();
 	realpath(cpath, out->cwd);
 
 	d = opendir(cpath);
 	if (d)
 	{
+		tfile* files = (tfile*) malloc(sizeof(tfile)*files_cap);
 		int files_count = 0;
 		while ((dir = readdir(d))!=NULL)
 		{
@@ -126,14 +139,17 @@ tdirlist* listdir(const char* cpath)
 			else
 				files[files_count]._color_pair = NORM_COLOR;
 			files_count++;
-
 		}
 
-		sort_copy(files, files_count, &out->files);
+		out->files = (tfile*) malloc(sizeof(tfile)*files_count);
+		sort_copy(files, files_count, out->files);
 		out->files_count = files_count;
 		closedir(d);
+		free(files);
 	}
-	free(files);
+	else {
+		out->err = errno;
+	}
 	return out;
 }
 

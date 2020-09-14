@@ -49,7 +49,7 @@ void init_curses();
 int create_app(tree_app* app);
 void refresh_app(tree_app* app);
 void resize_app(tree_app* app);
-void destroy_app(tree_app* app);
+void destroy_app(tree_app* app, tdirlist*);
 
 WINDOW* create_win(int, int, int, int);
 WINDOW* create_win_from_props(twinprops* props);
@@ -64,7 +64,7 @@ void show_row(tfile*, WINDOW*, int, int, int);
 void show_tdirlist(tdirlist*, tree_app*);
 int kbd_events(tdirlist*, tree_app*);
 void vnavigate(tdirlist*, tree_app*, e_vertical);
-void hnavigate(tdirlist*, tree_app*, e_horizontal);
+void hnavigate(tdirlist**, tree_app*, e_horizontal);
 
 
 #include "config.h"
@@ -196,16 +196,21 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical vert)
 	_write_cmd(app, count, RIGHT);
 }
 
-void hnavigate(tdirlist* d, tree_app* app, e_horizontal hor)
+void hnavigate(tdirlist** d, tree_app* app, e_horizontal hor)
 {
-	if (d->files[d->curs_pos].isdir)
+	tfile curfile = (*d)->files[(*d)->curs_pos];
+	if (curfile.isdir)
 	{
-		char* npath = malloc(PATH_MAX*sizeof(char));
-		strcpy(npath, d->files[d->curs_pos].fullpath);
-		free_tdirlist(d);
-		d = listdir((const char*)npath);
-		d->curs_pos = 0;
-		show_tdirlist(d, app);
+		tdirlist* new_d = listdir((const char*)curfile.fullpath);
+		_write_header(app, strerror(new_d->err), RIGHT);
+		if (new_d->err==0) {
+			free_tdirlist(*d);
+			*d = new_d;
+			show_tdirlist(*d, app);
+		}
+		else {
+			free_tdirlist(new_d);
+		}
 	}
 }
 
@@ -226,7 +231,7 @@ int kbd_events(tdirlist* d, tree_app* app)
 
 			case KEY_RIGHT:
 			case 'l':
-			hnavigate(d, app, RIGHT);
+			hnavigate(&d, app, RIGHT);
 			break;
 
 			case KEY_UP:
@@ -399,12 +404,13 @@ void resize_app(tree_app* app)
 }
 
 
-void destroy_app(tree_app* app)
+void destroy_app(tree_app* app, tdirlist* dlist)
 {
 	destroy_win(app->browser);
 	destroy_win(app->cmd);
 	refresh(); //paint screen
 	endwin(); //end curses mode
+	free_tdirlist(dlist);
 	curs_set(2); //0, 1 or 2
 }
 
@@ -435,14 +441,14 @@ int main(int argc, char* argv[])
 		{
 			case EXIT:
 			exit = true;
+			break;
 
 			case RESIZE:
 			resize_app(&app);
 			show_tdirlist(d, &app);
 			refresh_app(&app);
+			break;
 		}
 	}
-	destroy_app(&app);
-	curs_set(2); //0, 1 or 2
-	free_tdirlist(d);
+	destroy_app(&app, d);
 }

@@ -18,6 +18,7 @@ typedef struct tdirlist {
 	tfile* files;
 	int files_count;
 	int curs_pos;
+	int err;
 } tdirlist;
 
 
