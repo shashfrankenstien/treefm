@@ -11,11 +11,10 @@
 
 
 #ifdef __WINDOWSOS__
-char* realpath(const char* file,char* path)
+char* realpath(const char* path, char resolved[PATH_MAX])
 {
-	char* result = (char*) malloc(_MAX_PATH);
-	if   (result) GetFullPathName(file,_MAX_PATH,result,NULL);
-	return result ;
+	GetFullPathName(path,_MAX_PATH,resolved,NULL);
+	return resolved;
 }
 #endif
 
