@@ -6,7 +6,7 @@ CLEAN=
 
 ifeq ($(OS),Windows_NT)
 	APP=treefm.exe
-	LIBFLAGS=-I..\PDCursesMod ..\PDCursesMod\wincon\pdcurses.a -lgdi32 -lcomdlg32 -lwinmm
+	LIBFLAGS=-I..\PDCursesMod ..\PDCursesMod\wincon\pdcurses.a -lwinmm
 	CLEAN=del *.o $(APP)
 else
 	APP=treefm
