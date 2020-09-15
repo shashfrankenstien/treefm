@@ -1,4 +1,24 @@
-#include <linux/limits.h>
+#pragma once
+
+#if defined(_WIN64) || defined(_WIN32)
+	#ifndef __WINDOWSOS__
+		#define __WINDOWSOS__
+	#endif
+
+	#include <windows.h>
+	char* realpath(const char* file,char* path);
+	#define lstat _stat
+	#define stat  _stat
+
+	#ifndef PATH_MAX
+		#define PATH_MAX 1024
+	#endif
+#else
+	#include <linux\limits.h>
+#endif
+
+#define IFTODT(mode) (((mode) & 0170000) >> 12)
+
 
 
 typedef struct tfile {

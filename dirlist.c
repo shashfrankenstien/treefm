@@ -10,8 +10,17 @@
 #include "dirlist.h" /*declarations*/
 
 
-// function implementations
+#ifdef __WINDOWSOS__
+char* realpath(const char* file,char* path)
+{
+	char* result = (char*) malloc(_MAX_PATH);
+	if   (result) GetFullPathName(file,_MAX_PATH,result,NULL);
+	return result ;
+}
+#endif
 
+
+// function implementations
 tdirlist* new_tdirlist()
 {
 	tdirlist* l = (tdirlist*)malloc(sizeof(tdirlist));
@@ -120,7 +129,6 @@ tdirlist* listdir(const char* cpath)
 			}
 
 			strcpy(files[files_count].name, dir->d_name);
-			files[files_count].type = dir->d_type;
 			files[files_count].len = dir->d_reclen;
 
 			char combined[strlen(cpath) + strlen(dir->d_name) + 2];
@@ -129,6 +137,7 @@ tdirlist* listdir(const char* cpath)
 
 			stat(files[files_count].fullpath, &files[files_count].st);
 
+			files[files_count].type = IFTODT(files[files_count].st.st_mode);
 			files[files_count].isdir = S_ISDIR(files[files_count].st.st_mode);
 			files[files_count].isexe = is_executable(files[files_count].st.st_mode);
 
