@@ -14,7 +14,8 @@
 		#define PATH_MAX 1024
 	#endif
 #else
-	#include <linux/limits.h>
+	#define _POSIX_C_SOURCE 1
+	#include <limits.h>
 #endif
 
 #define IFTODT(mode) (((mode) & 0170000) >> 12)
