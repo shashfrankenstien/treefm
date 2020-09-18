@@ -1,5 +1,11 @@
 #pragma once
 
+#ifdef MOUSE_MOVED
+	/* defined in TDM-GCC-64/x86_64-w64-mingw32/include/wincon.h:71
+	* undef here to use the definition in PDCursesMod/curses.h */
+	#undef MOUSE_MOVED
+#endif
+
 #include <curses.h>
 
 
