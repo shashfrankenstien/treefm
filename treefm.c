@@ -5,10 +5,54 @@
 #include "ui.h"
 
 
+// function declarations
+void show_row(tfile*, WINDOW*, int, int, int);
+void show_tdirlist(tdirlist*, tree_app*);
 
 int kbd_events(tdirlist**, tree_app*);
 void vnavigate(tdirlist*, tree_app*, e_vertical);
 void hnavigate(tdirlist**, tree_app*, e_horizontal);
+
+
+
+void show_row(tfile* f, WINDOW* win, int curr, int curc, int maxc)
+{
+	if (f->_color_pair!=NORM_COLOR)
+		wattron(win, A_BOLD | COLOR_PAIR(f->_color_pair));
+
+	char sz[] = "00000";
+	_fmt_fsize(f->st.st_size, sz);
+	mvwprintw(win, curr, curc, "%s", f->name);
+	mvwprintw(win, curr, maxc-strlen(sz), "%s", sz);
+
+	if (f->_color_pair!=NORM_COLOR)
+		wattroff(win, A_BOLD | COLOR_PAIR(f->_color_pair));
+}
+
+void show_tdirlist(tdirlist* d, tree_app* app)
+{
+	erase();
+	werase(app->browser);
+	werase(app->cmd);
+	int maxc = app->brw_props.cols - (2*app->brw_props.padc);
+	int curc = app->brw_props.startc + app->brw_props.padc;
+	int padr = app->brw_props.padr;
+
+	for (int r=0; r < d->files_count; r++)
+		show_row(&d->files[r], app->browser, r+padr, curc, maxc);
+
+	mvwchgat(app->browser, d->curs_pos+padr, 0,
+		-1, A_REVERSE|A_BOLD,
+		get_tfile_colorpair(d, d->curs_pos), NULL);
+
+	_write_header(app, d->cwd, LEFT);
+	_write_footer(app, d->cwd, LEFT);
+	char count[10];
+	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
+	_write_cmd(app, count, RIGHT);
+}
+
+
 
 
 
@@ -55,6 +99,7 @@ void hnavigate(tdirlist** d, tree_app* app, e_horizontal hor)
 		}
 	}
 }
+
 
 int kbd_events(tdirlist** d, tree_app* app)
 {
@@ -130,5 +175,7 @@ int main(int argc, char* argv[])
 			break;
 		}
 	}
-	destroy_app(&app, d);
+	destroy_app(&app);
+	free_tdirlist(d);
+
 }

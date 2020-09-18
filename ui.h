@@ -1,7 +1,7 @@
 #pragma once
 
 #include <curses.h>
-#include "dirlist.h"
+
 
 typedef enum {
 	EXIT,
@@ -9,6 +9,7 @@ typedef enum {
 } e_browser_acts;
 
 typedef enum {UP, DOWN} e_vertical;
+
 typedef enum {
 	RIGHT=1,
 	NEXT=1,
@@ -17,7 +18,6 @@ typedef enum {
 	PREV=0,
 	CLOSE=0
 } e_horizontal;
-
 
 
 
@@ -52,7 +52,7 @@ void init_curses();
 int create_app(tree_app* app);
 void refresh_app(tree_app* app);
 void resize_app(tree_app* app);
-void destroy_app(tree_app* app, tdirlist*);
+void destroy_app(tree_app* app);
 
 WINDOW* create_win(int, int, int, int);
 WINDOW* create_win_from_props(twinprops* props);
@@ -62,6 +62,3 @@ void _fmt_fsize(long int, char*);
 void _write_cmd(tree_app*, char*, e_horizontal);
 void _write_header(tree_app*, char*, e_horizontal);
 void _write_footer(tree_app*, char*, e_horizontal);
-
-void show_row(tfile*, WINDOW*, int, int, int);
-void show_tdirlist(tdirlist*, tree_app*);
