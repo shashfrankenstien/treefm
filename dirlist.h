@@ -1,5 +1,8 @@
 #pragma once
 
+#include <sys/stat.h>
+
+
 #if defined(_WIN64) || defined(_WIN32)
 	#ifndef __WINDOWSOS__
 		#define __WINDOWSOS__

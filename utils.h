@@ -15,8 +15,3 @@
 #define true 1
 
 #define bool _Bool
-
-typedef enum {
-	EXIT,
-	RESIZE,
-} e_browser_acts;

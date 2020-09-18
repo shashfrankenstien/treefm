@@ -14,10 +14,13 @@ else
 	CLEAN=rm *.o $(APP) 2> /dev/null || true
 endif
 
-build: dirlist.o treefm.c
+build: dirlist.o ui.o treefm.c
 	gcc -Wall -g -o $(APP) $^ $(LIBFLAGS)
 
 dirlist.o: dirlist.c
+	gcc -Wall -g -c $^ -o $@
+
+ui.o: ui.c
 	gcc -Wall -g -c $^ -o $@
 
 clean:
