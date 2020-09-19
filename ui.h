@@ -31,7 +31,7 @@ typedef enum {
 typedef struct twinprops {
 	int rows, cols;
 	int startr, startc;
-	int padr, padc;
+	int padc;
 	int curs_pos; // only used for main browser window
 } twinprops;
 
@@ -56,17 +56,12 @@ typedef struct tree_app {
 
 
 // function declarations
-void init_curses();
 int create_app(tree_app* app);
 void refresh_app(tree_app* app);
 void resize_app(tree_app* app);
 void destroy_app(tree_app* app);
 
-WINDOW* create_win(int, int, int, int);
-WINDOW* create_win_from_props(twinprops* props);
-void destroy_win(WINDOW*);
 
-void _fmt_fsize(long int, char*);
-void _write_cmd(tree_app*, char*, e_horizontal);
-void _write_header(tree_app*, char*, e_horizontal);
-void _write_footer(tree_app*, char*, e_horizontal);
+void write_cmd(tree_app*, char*, e_horizontal);
+void write_header(tree_app*, char*, e_horizontal);
+void write_footer(tree_app*, char*, e_horizontal);

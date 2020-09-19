@@ -7,6 +7,12 @@
 #include "ui.h"
 
 
+void init_curses();
+WINDOW* create_win(int, int, int, int);
+WINDOW* create_win_from_props(twinprops* props);
+void destroy_win(WINDOW*);
+
+
 // function implementations
 WINDOW* create_win(int height, int width, int starty, int startx)
 {
@@ -50,29 +56,8 @@ void destroy_win(WINDOW *win)
 }
 
 
-void _fmt_fsize(long int sz, char* szstr)
-{
-	float szf;
-	size_t slen = strlen(szstr);
-	if (sz < 1024)
-		snprintf(szstr, slen, "%ld", sz);
-	else if ((szf = sz/1024.) < 10.)
-		snprintf(szstr, slen, "%.1fK", szf);
-	else if ((szf = sz/1024.) < 1000)
-		snprintf(szstr, slen, "%.0fK", szf);
-	else if ((szf = sz/1024./1024.) < 10)
-		snprintf(szstr, slen, "%.1fM", szf);
-	else if ((szf = sz/1024./1024.) < 1000)
-		snprintf(szstr, slen, "%.0fM", szf);
-	else if ((szf = sz/1024./1024./1024.) < 1000)
-		snprintf(szstr, slen, "%.0fG", szf);
-	else
-		snprintf(szstr, slen, "%.0fT", szf/1024./1024./1024./1024.);
-}
 
-
-
-void _write_cmd(tree_app* app, char* txt, e_horizontal align)
+void write_cmd(tree_app* app, char* txt, e_horizontal align)
 {
 	if (align==RIGHT)
 		strcpy(app->cmdtxt_r, txt);
@@ -91,7 +76,7 @@ void _write_cmd(tree_app* app, char* txt, e_horizontal align)
 }
 
 
-void _write_header(tree_app* app, char* txt, e_horizontal align)
+void write_header(tree_app* app, char* txt, e_horizontal align)
 {
 	if (align==RIGHT)
 		strcpy(app->header_r, txt);
@@ -109,7 +94,7 @@ void _write_header(tree_app* app, char* txt, e_horizontal align)
 	mvwprintw(stdscr, 0, startr, "%s", app->header_r);
 }
 
-void _write_footer(tree_app* app, char* txt, e_horizontal align)
+void write_footer(tree_app* app, char* txt, e_horizontal align)
 {
 	if (align==RIGHT)
 		strcpy(app->footer_r, txt);
@@ -164,7 +149,6 @@ int create_app(tree_app* app)
 		.cols = COLS - (2*main_border_c),
 		.startr = main_border_r,
 		.startc = main_border_c,
-		.padr = intern_pad_r,
 		.padc = intern_pad_c,
 		.curs_pos = 0
 	};
@@ -175,7 +159,6 @@ int create_app(tree_app* app)
 		.startr = LINES-1,
 		.startc = 0,
 		.padc = main_border_c,
-		.padr = 0
 	};
 
 	if (main_light_borders) wbkgd(stdscr, A_BOLD|COLOR_PAIR(INVNORM_COLOR));
@@ -228,7 +211,7 @@ void resize_app(tree_app* app)
 
 	char sz[10];
 	snprintf(sz, 10, "%d,%d", newr, newc);
-	_write_header(app, sz, RIGHT);
+	write_header(app, sz, RIGHT);
 }
 
 

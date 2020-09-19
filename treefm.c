@@ -6,6 +6,7 @@
 
 
 // function declarations
+void _fmt_fsize(long int, char*);
 void show_row(tfile*, WINDOW*, int, int, int);
 void show_tdirlist(tdirlist*, tree_app*);
 
@@ -13,6 +14,27 @@ int kbd_events(tdirlist**, tree_app*);
 void vnavigate(tdirlist*, tree_app*, e_vertical);
 void hnavigate(tdirlist**, tree_app*, e_horizontal);
 
+
+
+void _fmt_fsize(long int sz, char* szstr)
+{
+	float szf;
+	size_t slen = strlen(szstr);
+	if (sz < 1024)
+		snprintf(szstr, slen, "%ld", sz);
+	else if ((szf = sz/1024.) < 10.)
+		snprintf(szstr, slen, "%.1fK", szf);
+	else if ((szf = sz/1024.) < 1000)
+		snprintf(szstr, slen, "%.0fK", szf);
+	else if ((szf = sz/1024./1024.) < 10)
+		snprintf(szstr, slen, "%.1fM", szf);
+	else if ((szf = sz/1024./1024.) < 1000)
+		snprintf(szstr, slen, "%.0fM", szf);
+	else if ((szf = sz/1024./1024./1024.) < 1000)
+		snprintf(szstr, slen, "%.0fG", szf);
+	else
+		snprintf(szstr, slen, "%.0fT", szf/1024./1024./1024./1024.);
+}
 
 
 void show_row(tfile* f, WINDOW* win, int curr, int curc, int maxc)
@@ -29,6 +51,7 @@ void show_row(tfile* f, WINDOW* win, int curr, int curc, int maxc)
 		wattroff(win, A_BOLD | COLOR_PAIR(f->_color_pair));
 }
 
+
 void show_tdirlist(tdirlist* d, tree_app* app)
 {
 	erase();
@@ -36,13 +59,12 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 	werase(app->cmd);
 	int maxc = app->brw_props.cols - (2*app->brw_props.padc);
 	int curc = app->brw_props.startc + app->brw_props.padc;
-	int padr = app->brw_props.padr;
 
 	int visible_rows = iMIN(app->brw_props.rows, d->files_count);
 	for (int r=0; r < visible_rows; r++)
-		show_row(&d->files[r], app->browser, r+padr, curc, maxc);
+		show_row(&d->files[r], app->browser, r, curc, maxc);
 
-	mvwchgat(app->browser, app->brw_props.curs_pos+padr, 0,
+	mvwchgat(app->browser, app->brw_props.curs_pos, 0,
 		-1, A_REVERSE|A_BOLD,
 		get_tfile_colorpair(d, d->curs_pos), NULL);
 
@@ -50,11 +72,11 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 		scrollok(app->browser, true); // allows browser (main) window to scroll
 	}
 
-	_write_header(app, d->cwd, LEFT);
-	_write_footer(app, d->cwd, LEFT);
+	write_header(app, d->cwd, LEFT);
+	write_footer(app, d->cwd, LEFT);
 	char count[10];
 	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
-	_write_cmd(app, count, RIGHT);
+	write_cmd(app, count, RIGHT);
 }
 
 
@@ -66,11 +88,10 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical direction)
 	// reset color highlight on current position
 	int cp = get_tfile_colorpair(d, d->curs_pos);
 	int gatp = A_NORMAL;
-	int padr = app->brw_props.padr; // vertical padding from config
 
 	if (cp!=NORM_COLOR)
 		gatp |= A_BOLD;
-	mvwchgat(app->browser, app->brw_props.curs_pos+padr, 0, -1, gatp, cp, NULL); // reset color
+	mvwchgat(app->browser, app->brw_props.curs_pos, 0, -1, gatp, cp, NULL); // reset color
 
 	if (direction==DOWN) {
 		if (app->brw_props.curs_pos + scroll_offset + 1 >= app->brw_props.rows
@@ -108,13 +129,13 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical direction)
 		d->curs_pos = iMAX(d->curs_pos - 1, 0); // decrement file pointer pos
 	}
 
-	mvwchgat(app->browser, app->brw_props.curs_pos+padr, 0,
+	mvwchgat(app->browser, app->brw_props.curs_pos, 0,
 		-1, A_REVERSE|A_BOLD,
 		get_tfile_colorpair(d, d->curs_pos), NULL); // highlight new cursor position
 
 	char count[10];
 	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
-	_write_cmd(app, count, RIGHT);
+	write_cmd(app, count, RIGHT);
 
 }
 
@@ -125,7 +146,7 @@ void hnavigate(tdirlist** d, tree_app* app, e_horizontal direction)
 	if (curfile.isdir)
 	{
 		tdirlist* new_d = listdir((const char*)curfile.fullpath);
-		_write_header(app, strerror(new_d->err), RIGHT);
+		write_header(app, strerror(new_d->err), RIGHT);
 		if (new_d->err==0) {
 			free_tdirlist(*d);
 			*d = new_d;
@@ -171,7 +192,7 @@ int kbd_events(tdirlist** d, tree_app* app)
 			break;
 		}
 		char* c = (char*)&ch;
-		_write_cmd(app, c, LEFT);
+		write_cmd(app, c, LEFT);
 		refresh_app(app);
 	}
 	return EXIT;

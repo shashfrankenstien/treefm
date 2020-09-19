@@ -2,7 +2,6 @@
 //config defaults
 #define main_border_r 1
 #define main_border_c 1
-#define intern_pad_r 0
 #define intern_pad_c 1
 
 #define scroll_offset 5
