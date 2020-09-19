@@ -54,9 +54,8 @@ void show_row(tfile* f, WINDOW* win, int curr, int curc, int maxc)
 
 void show_tdirlist(tdirlist* d, tree_app* app)
 {
-	erase();
-	werase(app->browser);
-	werase(app->cmd);
+	erase_app(app);
+
 	int maxc = app->brw_props.cols - (2*app->brw_props.padc);
 	int curc = app->brw_props.startc + app->brw_props.padc;
 

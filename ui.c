@@ -2,6 +2,7 @@
 #include <string.h> /*strlen*/
 #include <curses.h>
 #include <sys/stat.h> /*struct stat*/
+#include <math.h> /*floor, ceil*/
 
 #include "utils.h" /*macros*/
 #include "ui.h"
@@ -139,21 +140,32 @@ int create_app(tree_app* app)
 {
 	init_curses(); // start root window
 
-	twinprops rp = { //root
+	app->root_props = (twinprops){
 		.rows = LINES,
 		.cols = COLS,
 	};
 
-	twinprops bp = { //browser
+	int preview_width = floor(COLS / 3);
+	int browser_width = (2*preview_width) + 1; // +1 to imply ceil
+
+	app->preview_props = (twinprops){
 		.rows = LINES - (2*main_border_r) - 1, /*-1 for command window*/
-		.cols = COLS - (2*main_border_c),
+		.cols = preview_width - (2*main_border_c),
+		.startr = main_border_r,
+		.startc = browser_width + main_border_c,
+		.padc = intern_pad_c,
+	};
+
+	app->brw_props = (twinprops){
+		.rows = LINES - (2*main_border_r) - 1, /*-1 for command window*/
+		.cols = browser_width - (2*main_border_c),
 		.startr = main_border_r,
 		.startc = main_border_c,
 		.padc = intern_pad_c,
 		.curs_pos = 0
 	};
 
-	twinprops cp = { //command
+	app->cmd_props = (twinprops){
 		.rows = 1,
 		.cols = COLS,
 		.startr = LINES-1,
@@ -165,11 +177,9 @@ int create_app(tree_app* app)
 	wborder(stdscr, ' ', ' ', ' ',' ',' ',' ',' ',' ');
 	refresh();
 
-	app->root_props = rp;
-	app->browser = create_win_from_props(&bp);
-	app->cmd = create_win_from_props(&cp);
-	app->brw_props = bp;
-	app->cmd_props = cp;
+	app->browser = create_win_from_props(&app->brw_props);
+	app->cmd = create_win_from_props(&app->cmd_props);
+	app->preview = create_win_from_props(&app->preview_props);
 	app->cmdtxt_l[0] = '\0';
 	app->cmdtxt_r[0] = '\0';
 	app->header_l[0] = '\0';
@@ -180,13 +190,6 @@ int create_app(tree_app* app)
 }
 
 
-void refresh_app(tree_app* app)
-{
-	refresh();
-	wrefresh(app->browser);
-	wrefresh(app->cmd);
-}
-
 
 void resize_app(tree_app* app)
 {
@@ -196,18 +199,29 @@ void resize_app(tree_app* app)
 	deltac = newc - app->root_props.cols;
 
 	app->root_props.cols += deltac;
-	app->brw_props.cols += deltac;
 	app->cmd_props.cols += deltac;
+	app->brw_props.cols += ceil(deltac / 2);
+	app->preview_props.cols += floor(deltac / 2);
+
 	if (deltar != 0 )
 	{
 		app->root_props.rows += deltar;
 		app->brw_props.rows += deltar;
+		app->preview_props.rows += deltar;
+
 		app->cmd_props.startr += deltar;
 		mvwin(app->cmd, app->cmd_props.startr, 0);
 	}
 
 	wresize(app->cmd, app->cmd_props.rows, app->cmd_props.cols);
 	wresize(app->browser, app->brw_props.rows, app->brw_props.cols);
+	wresize(app->preview, app->preview_props.rows, app->preview_props.cols);
+
+	int preview_startc = app->brw_props.cols + (3*main_border_c);
+	if (preview_startc != app->preview_props.startc) {
+		app->preview_props.startc = preview_startc;
+		mvwin(app->preview, app->preview_props.startr, app->preview_props.startc);
+	}
 
 	char sz[10];
 	snprintf(sz, 10, "%d,%d", newr, newc);
@@ -215,10 +229,29 @@ void resize_app(tree_app* app)
 }
 
 
+void refresh_app(tree_app* app)
+{
+	refresh();
+	wrefresh(app->browser);
+	wrefresh(app->cmd);
+	wrefresh(app->preview);
+}
+
+
+void erase_app(tree_app* app)
+{
+	erase();
+	werase(app->browser);
+	werase(app->cmd);
+	werase(app->preview);
+}
+
+
 void destroy_app(tree_app* app)
 {
 	destroy_win(app->browser);
 	destroy_win(app->cmd);
+	destroy_win(app->preview);
 	refresh(); //paint screen
 	endwin(); //end curses mode
 	curs_set(2); //0, 1 or 2

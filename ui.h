@@ -57,8 +57,9 @@ typedef struct tree_app {
 
 // function declarations
 int create_app(tree_app* app);
-void refresh_app(tree_app* app);
 void resize_app(tree_app* app);
+void refresh_app(tree_app* app);
+void erase_app(tree_app* app);
 void destroy_app(tree_app* app);
 
 
