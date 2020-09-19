@@ -7,6 +7,7 @@
 #endif
 
 #include <curses.h>
+#include "config.h"
 
 
 typedef enum {
@@ -31,6 +32,7 @@ typedef struct twinprops {
 	int rows, cols;
 	int startr, startc;
 	int padr, padc;
+	int curs_pos; // only used for main browser window
 } twinprops;
 
 typedef struct tree_app {

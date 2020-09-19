@@ -38,12 +38,17 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 	int curc = app->brw_props.startc + app->brw_props.padc;
 	int padr = app->brw_props.padr;
 
-	for (int r=0; r < d->files_count; r++)
+	int visible_rows = iMIN(app->brw_props.rows, d->files_count);
+	for (int r=0; r < visible_rows; r++)
 		show_row(&d->files[r], app->browser, r+padr, curc, maxc);
 
-	mvwchgat(app->browser, d->curs_pos+padr, 0,
+	mvwchgat(app->browser, app->brw_props.curs_pos+padr, 0,
 		-1, A_REVERSE|A_BOLD,
 		get_tfile_colorpair(d, d->curs_pos), NULL);
+
+	if (app->brw_props.rows < d->files_count) {
+		scrollok(app->browser, true); // allows browser (main) window to scroll
+	}
 
 	_write_header(app, d->cwd, LEFT);
 	_write_footer(app, d->cwd, LEFT);
@@ -56,35 +61,67 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 
 
 
-void vnavigate(tdirlist* d, tree_app* app, e_vertical vert)
+void vnavigate(tdirlist* d, tree_app* app, e_vertical direction)
 {
-	int cpos;
-	if (vert==DOWN)
-		cpos = iMIN(d->curs_pos + 1, (d->files_count - 1));
-	else
-		cpos = iMAX(d->curs_pos - 1, 0);
-
+	// reset color highlight on current position
 	int cp = get_tfile_colorpair(d, d->curs_pos);
 	int gatp = A_NORMAL;
+	int padr = app->brw_props.padr; // vertical padding from config
+
 	if (cp!=NORM_COLOR)
 		gatp |= A_BOLD;
+	mvwchgat(app->browser, app->brw_props.curs_pos+padr, 0, -1, gatp, cp, NULL); // reset color
 
-	int padr = app->brw_props.padr; // vertical padding from config
-	mvwchgat(app->browser, d->curs_pos+padr, 0, -1, gatp, cp, NULL); // reset color on prev position
-	d->curs_pos = cpos;
-	mvwchgat(app->browser, cpos+padr, 0,
+	if (direction==DOWN) {
+		if (app->brw_props.curs_pos + scroll_offset + 1 >= app->brw_props.rows
+			&& (d->files_count-1) - d->curs_pos > scroll_offset) { // need to scroll down
+			wscrl(app->browser, 1);
+			// write a new row
+			int edge_idx = d->curs_pos + scroll_offset + 1;
+			int maxc = app->brw_props.cols - (2*app->brw_props.padc);
+			int curc = app->brw_props.startc + app->brw_props.padc;
+			show_row(&d->files[edge_idx], app->browser, app->brw_props.rows-1, curc, maxc);
+
+		} else {
+			// not scrolling. move cursor down
+			app->brw_props.curs_pos = iMIN(
+				iMIN(app->brw_props.curs_pos + 1, (d->files_count - 1)), // files count limit for short lists
+				app->brw_props.rows-1 // browser last row
+			);
+		}
+		d->curs_pos = iMIN(d->curs_pos + 1, (d->files_count - 1)); // increment file pointer pos
+	}
+	else {
+		if (app->brw_props.curs_pos - scroll_offset <= 0
+			&& d->curs_pos > app->brw_props.curs_pos) { // need to scroll up
+			wscrl(app->browser, -1);
+			// write a new row
+			int edge_idx = d->curs_pos - app->brw_props.curs_pos - 1;
+			int maxc = app->brw_props.cols - (2*app->brw_props.padc);
+			int curc = app->brw_props.startc + app->brw_props.padc;
+			show_row(&d->files[edge_idx], app->browser, 0, curc, maxc);
+
+		} else {
+			// not scrolling. move cursor up
+			app->brw_props.curs_pos = iMAX(app->brw_props.curs_pos - 1, 0);
+		}
+		d->curs_pos = iMAX(d->curs_pos - 1, 0); // decrement file pointer pos
+	}
+
+	mvwchgat(app->browser, app->brw_props.curs_pos+padr, 0,
 		-1, A_REVERSE|A_BOLD,
-		get_tfile_colorpair(d, cpos), NULL); // highlight new cursor position
+		get_tfile_colorpair(d, d->curs_pos), NULL); // highlight new cursor position
 
 	char count[10];
 	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
 	_write_cmd(app, count, RIGHT);
+
 }
 
 
-void hnavigate(tdirlist** d, tree_app* app, e_horizontal hor)
+void hnavigate(tdirlist** d, tree_app* app, e_horizontal direction)
 {
-	tfile curfile = (*d)->files[(*d)->curs_pos];
+	tfile curfile = (*d)->files[ (*d)->curs_pos ];
 	if (curfile.isdir)
 	{
 		tdirlist* new_d = listdir((const char*)curfile.fullpath);
@@ -92,6 +129,7 @@ void hnavigate(tdirlist** d, tree_app* app, e_horizontal hor)
 		if (new_d->err==0) {
 			free_tdirlist(*d);
 			*d = new_d;
+			app->brw_props.curs_pos = 0; // reset cursor to top. TODO - parse path and move to directory
 			show_tdirlist(*d, app);
 		}
 		else {
@@ -99,6 +137,7 @@ void hnavigate(tdirlist** d, tree_app* app, e_horizontal hor)
 		}
 	}
 }
+
 
 
 int kbd_events(tdirlist** d, tree_app* app)

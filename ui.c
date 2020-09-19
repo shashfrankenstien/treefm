@@ -6,8 +6,6 @@
 #include "utils.h" /*macros*/
 #include "ui.h"
 
-#include "config.h"
-
 
 // function implementations
 WINDOW* create_win(int height, int width, int starty, int startx)
@@ -167,7 +165,8 @@ int create_app(tree_app* app)
 		.startr = main_border_r,
 		.startc = main_border_c,
 		.padr = intern_pad_r,
-		.padc = intern_pad_c
+		.padc = intern_pad_c,
+		.curs_pos = 0
 	};
 
 	twinprops cp = { //command
