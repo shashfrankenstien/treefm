@@ -9,6 +9,8 @@
 #include "utils.h" /*macros*/
 #include "dirlist.h" /*declarations*/
 
+#include "config.h"
+
 
 #ifdef __WINDOWSOS__
 char* realpath(const char* path, char resolved[PATH_MAX])
@@ -96,6 +98,19 @@ void joinpath(const char* dirname, const char* basename, char* buf)
 }
 
 
+void trim_home_inplace(char* path)
+{
+	char* home_path = getenv(HOMEPATH_ENV_VAR);
+	if (home_path!=NULL) {
+		char* match = strstr(path, home_path);
+		if (match!=NULL) {
+			size_t home_len = strlen(home_path);
+			snprintf(path, strlen(path)-home_len+2, "~%s%c", match+home_len, '\0');
+		}
+	}
+}
+
+
 bool is_executable(mode_t st_mode)
 {
 	return S_ISREG(st_mode) && (
@@ -114,9 +129,7 @@ tdirlist* listdir(const char* cpath)
 	tdirlist* out = new_tdirlist();
 	realpath(cpath, out->cwd);
 
-	// char* c = strstr(out->cwd, getenv(HOMEPATH_ENV_VAR));
-	// if (c)
-	// 	printf("%s\n", c);
+	if (TRIM_HOME_DIR_PATH) trim_home_inplace(out->cwd);
 
 	d = opendir(cpath);
 	if (d)
