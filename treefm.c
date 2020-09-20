@@ -13,6 +13,7 @@ typedef struct {
 } cmd_t;
 
 void cmd_add(cmd_t*, char);
+void cmd_pop(cmd_t*);
 void cmd_clear(cmd_t*);
 int cmd_getint(cmd_t*);
 
@@ -21,7 +22,7 @@ void _fmt_fsize(long int, char*);
 void show_row(tfile*, WINDOW*, int, int, int);
 void show_tdirlist(tdirlist*, tree_app*);
 
-int kbd_events(tdirlist**, tree_app*);
+e_browser_acts kbd_events(tdirlist**, tree_app*);
 void vnavigate(tdirlist*, tree_app*, e_vertical, int);
 void hnavigate(tdirlist**, tree_app*, e_horizontal);
 
@@ -89,12 +90,6 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 	write_cmd(app, count, RIGHT);
 }
 
-
-// void vnavigate_step(tdirlist* d, tree_app* app, e_vertical direction, int step)
-// {
-// 	for (int i=1; i<=step; i++)
-// 		vnavigate(d, app, direction);
-// }
 
 
 void vnavigate(tdirlist* d, tree_app* app, e_vertical direction, int step)
@@ -186,6 +181,11 @@ void cmd_add(cmd_t* m, char c)
 	m->cmd[++m->len] = '\0';
 }
 
+void cmd_pop(cmd_t* m)
+{
+	m->cmd[--m->len] = '\0';
+}
+
 void cmd_clear(cmd_t* m)
 {
 	m->cmd[0] = '\0';
@@ -206,7 +206,41 @@ int cmd_getint(cmd_t* m)
 }
 
 
-int kbd_events(tdirlist** d, tree_app* app)
+int cmd_mode(cmd_t* m, tree_app* app)
+{
+	curs_set(1);
+	int ch = ':';
+	do{
+		switch(ch)
+		{
+			case 27: // escape (delayed)
+			cmd_clear(m);
+			return -1;
+			break;
+
+			case 127:
+			case KEY_BACKSPACE:
+			if (m->len>0)
+			{
+				cmd_pop(m);
+				mvwdelch(app->cmd, 0, m->len);
+			}
+			break;
+
+			default:
+			mvwaddch(app->cmd, 0, m->len, ch);
+			cmd_add(m, ch);
+			break;
+		}
+		wrefresh(app->cmd);
+	} while((ch = getch()) != 10);
+
+	curs_set(0);
+	return 0;
+}
+
+
+e_browser_acts kbd_events(tdirlist** d, tree_app* app)
 {
 	cmd_t command = {'\0', "", 0};
 
@@ -249,6 +283,14 @@ int kbd_events(tdirlist** d, tree_app* app)
 
 			case '0' ... '9':
 			cmd_add(&command, ch);
+			break;
+
+			case ':':
+			cmd_mode(&command, app);
+			if (strcmp(command.cmd, ":q")==0)
+				return EXIT;
+			cmd_clear(&command);
+			ch = '\0';
 			break;
 		}
 
