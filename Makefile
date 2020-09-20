@@ -8,12 +8,12 @@ CLEAN=
 ifeq ($(OS),Windows_NT)
 	APP=treefm.exe
 	INCLUDES=-I..\PDCursesMod
-	LIBFLAGS=..\PDCursesMod\wincon\pdcurses.a -lwinmm
+	LIBFLAGS=..\PDCursesMod\wincon\pdcurses.a -lwinmm -lm
 	CLEAN=del *.o $(APP)
 else
 	APP=treefm
 	INCLUDES=
-	LIBFLAGS=-lncurses
+	LIBFLAGS=-lncurses -lm
 	CLEAN=rm *.o $(APP) 2> /dev/null || true
 endif
 

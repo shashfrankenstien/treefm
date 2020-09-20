@@ -145,23 +145,23 @@ int create_app(tree_app* app)
 		.cols = COLS,
 	};
 
-	int preview_width = floor(COLS / 3);
-	int browser_width = (2*preview_width) + 1; // +1 to imply ceil
+	int browser_width = ceil(COLS*BROWSER_OUTER_WIDTH);
+	int preview_width = COLS - browser_width;
 
 	app->preview_props = (twinprops){
-		.rows = LINES - (2*main_border_r) - 1, /*-1 for command window*/
-		.cols = preview_width - (2*main_border_c),
-		.startr = main_border_r,
-		.startc = browser_width + main_border_c,
-		.padc = intern_pad_c,
+		.rows = LINES - (2*MAIN_BORDER_R) - 1, /*-1 for command window*/
+		.cols = preview_width - (2*MAIN_BORDER_C),
+		.startr = MAIN_BORDER_R,
+		.startc = browser_width + MAIN_BORDER_C,
+		.padc = INTERN_PAD_C,
 	};
 
 	app->brw_props = (twinprops){
-		.rows = LINES - (2*main_border_r) - 1, /*-1 for command window*/
-		.cols = browser_width - (2*main_border_c),
-		.startr = main_border_r,
-		.startc = main_border_c,
-		.padc = intern_pad_c,
+		.rows = LINES - (2*MAIN_BORDER_R) - 1, /*-1 for command window*/
+		.cols = browser_width - (2*MAIN_BORDER_C),
+		.startr = MAIN_BORDER_R,
+		.startc = MAIN_BORDER_C,
+		.padc = INTERN_PAD_C,
 		.curs_pos = 0
 	};
 
@@ -170,10 +170,10 @@ int create_app(tree_app* app)
 		.cols = COLS,
 		.startr = LINES-1,
 		.startc = 0,
-		.padc = main_border_c,
+		.padc = MAIN_BORDER_C,
 	};
 
-	if (main_light_borders) wbkgd(stdscr, A_BOLD|COLOR_PAIR(INVNORM_COLOR));
+	if (MAIN_LIGHT_BORDERS) wbkgd(stdscr, A_BOLD|COLOR_PAIR(INVNORM_COLOR));
 	wborder(stdscr, ' ', ' ', ' ',' ',' ',' ',' ',' ');
 	refresh();
 
@@ -200,8 +200,13 @@ void resize_app(tree_app* app)
 
 	app->root_props.cols += deltac;
 	app->cmd_props.cols += deltac;
-	app->brw_props.cols += ceil(deltac / 2);
-	app->preview_props.cols += floor(deltac / 2);
+
+	int main_width = app->brw_props.cols + app->preview_props.cols + deltac;
+	app->brw_props.cols = ceil(main_width * BROWSER_OUTER_WIDTH);
+	app->preview_props.cols = main_width - app->brw_props.cols;
+
+	app->preview_props.startc = app->brw_props.cols + (3*MAIN_BORDER_C);
+	mvwin(app->preview, app->preview_props.startr, app->preview_props.startc);
 
 	if (deltar != 0 )
 	{
@@ -216,12 +221,6 @@ void resize_app(tree_app* app)
 	wresize(app->cmd, app->cmd_props.rows, app->cmd_props.cols);
 	wresize(app->browser, app->brw_props.rows, app->brw_props.cols);
 	wresize(app->preview, app->preview_props.rows, app->preview_props.cols);
-
-	int preview_startc = app->brw_props.cols + (3*main_border_c);
-	if (preview_startc != app->preview_props.startc) {
-		app->preview_props.startc = preview_startc;
-		mvwin(app->preview, app->preview_props.startr, app->preview_props.startc);
-	}
 
 	char sz[10];
 	snprintf(sz, 10, "%d,%d", newr, newc);

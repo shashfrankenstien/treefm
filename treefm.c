@@ -72,7 +72,7 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 	}
 
 	write_header(app, d->cwd, LEFT);
-	write_footer(app, d->cwd, LEFT);
+	// write_footer(app, d->cwd, LEFT);
 	char count[10];
 	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
 	write_cmd(app, count, RIGHT);
@@ -93,11 +93,11 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical direction)
 	mvwchgat(app->browser, app->brw_props.curs_pos, 0, -1, gatp, cp, NULL); // reset color
 
 	if (direction==DOWN) {
-		if (app->brw_props.curs_pos + scroll_offset + 1 >= app->brw_props.rows
-			&& (d->files_count-1) - d->curs_pos > scroll_offset) { // need to scroll down
+		if (app->brw_props.curs_pos + SCROLL_OFFSET + 1 >= app->brw_props.rows
+			&& (d->files_count-1) - d->curs_pos > SCROLL_OFFSET) { // need to scroll down
 			wscrl(app->browser, 1);
 			// write a new row
-			int edge_idx = d->curs_pos + scroll_offset + 1;
+			int edge_idx = d->curs_pos + SCROLL_OFFSET + 1;
 			int maxc = app->brw_props.cols - (2*app->brw_props.padc);
 			int curc = app->brw_props.startc + app->brw_props.padc;
 			show_row(&d->files[edge_idx], app->browser, app->brw_props.rows-1, curc, maxc);
@@ -112,7 +112,7 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical direction)
 		d->curs_pos = iMIN(d->curs_pos + 1, (d->files_count - 1)); // increment file pointer pos
 	}
 	else {
-		if (app->brw_props.curs_pos - scroll_offset <= 0
+		if (app->brw_props.curs_pos - SCROLL_OFFSET <= 0
 			&& d->curs_pos > app->brw_props.curs_pos) { // need to scroll up
 			wscrl(app->browser, -1);
 			// write a new row
@@ -141,19 +141,21 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical direction)
 
 void hnavigate(tdirlist** d, tree_app* app, e_horizontal direction)
 {
-	tfile curfile = (*d)->files[ (*d)->curs_pos ];
-	if (curfile.isdir)
-	{
-		tdirlist* new_d = listdir((const char*)curfile.fullpath);
-		write_header(app, strerror(new_d->err), RIGHT);
-		if (new_d->err==0) {
-			free_tdirlist(*d);
-			*d = new_d;
-			app->brw_props.curs_pos = 0; // reset cursor to top. TODO - parse path and move to directory
-			show_tdirlist(*d, app);
-		}
-		else {
-			free_tdirlist(new_d);
+	if (direction==RIGHT) {
+		tfile curfile = (*d)->files[ (*d)->curs_pos ];
+		if (curfile.isdir)
+		{
+			tdirlist* new_d = listdir((const char*)curfile.fullpath);
+			write_header(app, strerror(new_d->err), RIGHT);
+			if (new_d->err==0) {
+				free_tdirlist(*d);
+				*d = new_d;
+				app->brw_props.curs_pos = 0; // reset cursor to top. TODO - parse path and move to directory
+				show_tdirlist(*d, app);
+			}
+			else {
+				free_tdirlist(new_d);
+			}
 		}
 	}
 }

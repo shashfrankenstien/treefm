@@ -1,9 +1,10 @@
 
 //config defaults
-#define main_border_r 1
-#define main_border_c 1
-#define intern_pad_c 1
+#define MAIN_BORDER_R 1
+#define MAIN_BORDER_C 1
+#define INTERN_PAD_C 1
 
-#define scroll_offset 5
+#define BROWSER_OUTER_WIDTH 0.6 // 0.0 to 1.0
+#define SCROLL_OFFSET 3
 
-#define main_light_borders true
+#define MAIN_LIGHT_BORDERS true

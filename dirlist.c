@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include <stdlib.h> /*malloc, realloc, free, true, false*/
+#include <stdlib.h> /*malloc, realloc, free,...*/
 #include <string.h> /*strcmp,strcpy,..*/
 #include <dirent.h>
 #include <errno.h>
@@ -96,7 +96,7 @@ void joinpath(const char* dirname, const char* basename, char* buf)
 }
 
 
-bool is_executable(unsigned int st_mode)
+bool is_executable(mode_t st_mode)
 {
 	return S_ISREG(st_mode) && (
 		st_mode & S_IXUSR
@@ -114,6 +114,10 @@ tdirlist* listdir(const char* cpath)
 	tdirlist* out = new_tdirlist();
 	realpath(cpath, out->cwd);
 
+	// char* c = strstr(out->cwd, getenv(HOMEPATH_ENV_VAR));
+	// if (c)
+	// 	printf("%s\n", c);
+
 	d = opendir(cpath);
 	if (d)
 	{
@@ -121,6 +125,9 @@ tdirlist* listdir(const char* cpath)
 		int files_count = 0;
 		while ((dir = readdir(d))!=NULL)
 		{
+			if (strcmp(dir->d_name, ".")==0) // ignore current directory "."
+				continue;
+
 			if (files_count==files_cap)
 			{// limit reached, reallocate array
 				files_cap*=2;

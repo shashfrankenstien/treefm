@@ -8,19 +8,25 @@
 		#define __WINDOWSOS__
 	#endif
 
+	#define HOMEPATH_ENV_VAR "USERPROFILE"
+
 	#include <windows.h>
 	char* realpath(const char* file,char* path);
 	#define lstat _stat
-	#define stat  _stat
+	#define stat _stat
 
 	#ifndef PATH_MAX
 		#define PATH_MAX 1024
 	#endif
+
 #else
+	#define HOMEPATH_ENV_VAR "HOME"
+
 	#ifndef _POSIX_C_SOURCE
 		#define _POSIX_C_SOURCE 1
 	#endif
 	#include <limits.h>
+
 #endif
 
 #define IFTODT(mode) (((mode) & 0170000) >> 12)
