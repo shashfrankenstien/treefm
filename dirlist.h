@@ -61,3 +61,5 @@ void free_tdirlist(tdirlist*);
 
 tfile* get_tfile(tdirlist*, int);
 short get_tfile_colorpair(tdirlist*, int);
+tfile* get_cur_tfile(tdirlist*);
+short get_cur_tfile_colorpair(tdirlist*);

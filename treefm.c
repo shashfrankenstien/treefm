@@ -4,6 +4,7 @@
 #include "utils.h" /*macros*/
 #include "dirlist.h"
 #include "ui.h"
+#include "preview.h"
 
 
 typedef struct {
@@ -89,6 +90,7 @@ void show_tdirlist(tdirlist* d, tree_app* app)
 	char count[10];
 	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
 	write_cmd(app, count, RIGHT);
+	prv_show_preview(d, app);
 }
 
 
@@ -148,7 +150,7 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical direction, int step)
 	char count[10];
 	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
 	write_cmd(app, count, RIGHT);
-
+	prv_show_preview(d, app);
 }
 
 
@@ -171,6 +173,7 @@ void hnavigate(tdirlist** d, tree_app* app, e_horizontal direction)
 			}
 		}
 	}
+	prv_show_preview(*d, app);
 }
 
 

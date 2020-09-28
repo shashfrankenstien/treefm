@@ -200,4 +200,12 @@ short get_tfile_colorpair(tdirlist* d, int idx)
 		return 0;
 }
 
+tfile* get_cur_tfile(tdirlist* d)
+{
+	return get_tfile(d, d->curs_pos);
+}
 
+short get_cur_tfile_colorpair(tdirlist* d)
+{
+	return get_tfile_colorpair(d, d->curs_pos);
+}
