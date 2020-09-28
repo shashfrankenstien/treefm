@@ -10,3 +10,5 @@
 #define MAIN_LIGHT_BORDERS true
 
 #define TRIM_HOME_DIR_PATH true
+
+#define DIRNAME_WITH_SLASH true

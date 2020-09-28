@@ -56,7 +56,8 @@ void show_row(tfile* f, WINDOW* win, int curr, int curc, int maxc)
 
 	char sz[] = "00000";
 	_fmt_fsize(f->st.st_size, sz);
-	mvwprintw(win, curr, curc, "%s", f->name);
+	const char* namefmt = (f->isdir && DIRNAME_WITH_SLASH) ? "%s/" : "%s";
+	mvwprintw(win, curr, curc, namefmt, f->name);
 	mvwprintw(win, curr, maxc-strlen(sz), "%s", sz);
 
 	if (f->_color_pair!=NORM_COLOR)
