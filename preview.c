@@ -5,7 +5,32 @@
 #include "utils.h" /*macros*/
 #include "dirlist.h"
 #include "ui.h"
-#include "preview.h"
+
+
+int print_dirlist_text(tfile* f, WINDOW* prv, int rows, int cols)
+{
+	if (!f->isdir) return -1;
+
+
+	tdirlist* d = listdir(f->fullpath);
+
+	for (int i=0; i<d->files_count && i<rows; i++) {
+		wmove(prv, i, 1);
+
+		if (d->files_count-1==i) // last element reached
+			waddch(prv, ACS_LLCORNER);
+		else
+			waddch(prv, ACS_LTEE);
+		waddch(prv, ACS_HLINE);
+		waddch(prv, ACS_HLINE);
+
+		const char* namefmt = (d->files[i].isdir && DIRNAME_WITH_SLASH) ? " %s/" : " %s";
+		wprintw(prv, namefmt, d->files[i].name);
+	}
+
+	free_tdirlist(d);
+	return 0;
+}
 
 
 void prv_show_preview(tdirlist* d, tree_app* app)
@@ -20,38 +45,10 @@ void prv_show_preview(tdirlist* d, tree_app* app)
 	char* prv_content = malloc(maxc*maxr * sizeof(char));
 
 	if (curfile->isdir) {
-		if(get_dirlist_text(curfile, prv_content, maxc*maxr)==0)
-			mvwprintw(app->preview, 0, 0, "%s\n", prv_content);
+		print_dirlist_text(curfile, app->preview, maxr, maxc);
 	}
 
 	free(prv_content);
 }
 
 
-int get_dirlist_text(tfile* f, char* content, int size_limit)
-{
-	if (!f->isdir) return -1;
-	tdirlist* d = listdir(f->fullpath);
-
-	int start_len = 0;
-	for (int i=0; i<d->files_count && start_len<size_limit; i++) {
-		int l = strlen(d->files[i].name)+5;
-		start_len += l;
-		if (start_len > size_limit)
-			l -= (start_len-size_limit);
-
-		const char* namefmt;
-		if (d->files[i].isdir && DIRNAME_WITH_SLASH) {
-			namefmt = "|--%s/\n";
-			l += 1;
-		}
-		else {
-			namefmt = "|--%s\n";
-		}
-		snprintf(content, l, namefmt, d->files[i].name);
-		content += l-1;
-	}
-
-	free_tdirlist(d);
-	return 0;
-}
