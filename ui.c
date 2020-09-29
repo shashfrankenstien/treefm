@@ -150,9 +150,9 @@ int create_app(tree_app* app)
 
 	app->preview_props = (twinprops){
 		.rows = LINES - (2*MAIN_BORDER_R) - 1, /*-1 for command window*/
-		.cols = preview_width - (2*MAIN_BORDER_C),
+		.cols = preview_width - MAIN_BORDER_C,
 		.startr = MAIN_BORDER_R,
-		.startc = browser_width + MAIN_BORDER_C,
+		.startc = browser_width,
 		.padc = INTERN_PAD_C,
 	};
 
