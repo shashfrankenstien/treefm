@@ -157,10 +157,11 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical direction, int step)
 void hnavigate(tdirlist** d, tree_app* app, e_horizontal direction)
 {
 	if (direction==RIGHT) {
-		tfile curfile = (*d)->files[ (*d)->curs_pos ];
-		if (curfile.isdir)
+		tfile* curfile = get_cur_tfile(*d);
+		// tfile curfile = (*d)->files[ (*d)->curs_pos ];
+		if (curfile->isdir)
 		{
-			tdirlist* new_d = listdir((const char*)curfile.fullpath);
+			tdirlist* new_d = listdir((const char*)curfile->fullpath);
 			write_header(app, strerror(new_d->err), RIGHT);
 			if (new_d->err==0) {
 				free_tdirlist(*d);

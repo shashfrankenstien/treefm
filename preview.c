@@ -1,4 +1,4 @@
-#include <stdlib.h> /*malloc, realloc, free,...*/
+// #include <stdlib.h> /*malloc, realloc, free,...*/
 #include <curses.h>
 #include <string.h>
 
@@ -7,10 +7,9 @@
 #include "ui.h"
 
 
-int print_dirlist_text(tfile* f, WINDOW* prv, int rows, int cols)
+static int print_dirlist_text(tfile* f, WINDOW* prv, int rows, int cols)
 {
-	if (!f->isdir) return -1;
-
+	if (!f->isdir) return -1; // redundant check
 
 	tdirlist* d = listdir(f->fullpath);
 
@@ -33,6 +32,49 @@ int print_dirlist_text(tfile* f, WINDOW* prv, int rows, int cols)
 }
 
 
+static int is_binary_file(FILE* fp)
+{
+	/* check if binary file by seeing if there are any
+	*	non-ascii characters in the first n bytes defined by test_len
+	*/
+	int test_len = 100;
+	int c, i = 0;
+	int is_bin = 0;
+
+	while ((c = getc(fp)) != EOF && i <= test_len) {
+		if (c < 32 && c != '\n' && c != '\t' && c != '\r') {
+			is_bin = 1;
+			break;
+		}
+		i++;
+	}
+	fseek(fp, 0, SEEK_SET);
+	return is_bin;
+}
+
+
+static int print_file_text(tfile* f, WINDOW* prv, int rows, int cols)
+{
+	if (f->isdir) return -1; // redundant check
+
+	FILE* fp = fopen(f->fullpath, "r");
+	if (fp == NULL)
+		return -1;
+
+	if (is_binary_file(fp)==1) // don't preview binary files
+		return -1;
+
+	int c, i = 0;
+	while ((c = getc(fp)) != EOF && i <= rows*cols) {
+		waddch(prv, c);
+		i++;
+	}
+
+	fclose(fp);
+	return 0;
+}
+
+
 void prv_show_preview(tdirlist* d, tree_app* app)
 {
 	werase(app->preview);
@@ -42,13 +84,12 @@ void prv_show_preview(tdirlist* d, tree_app* app)
 
 	tfile* curfile = get_cur_tfile(d);
 
-	char* prv_content = malloc(maxc*maxr * sizeof(char));
-
 	if (curfile->isdir) {
 		print_dirlist_text(curfile, app->preview, maxr, maxc);
 	}
-
-	free(prv_content);
+	else {
+		print_file_text(curfile, app->preview, maxr, maxc);
+	}
 }
 
 
