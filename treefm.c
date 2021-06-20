@@ -214,8 +214,9 @@ int cmd_getint(cmd_t* m)
 int cmd_mode(cmd_t* m, tree_app* app)
 {
 	curs_set(1);
-	int ch = ':';
-	do{
+	int ch;
+
+	 while((ch = wgetch(app->cmd)) != 10) {
 		switch(ch)
 		{
 			case 27: // escape (delayed)
@@ -228,19 +229,33 @@ int cmd_mode(cmd_t* m, tree_app* app)
 			if (m->len>0)
 			{
 				cmd_pop(m);
-				mvwdelch(app->cmd, 0, m->len);
+				mvwdelch(app->cmd, 0, m->len+1);
 			}
 			break;
 
 			default:
-			mvwaddch(app->cmd, 0, m->len, ch);
+			mvwaddch(app->cmd, 0, m->len+1, ch);
 			cmd_add(m, ch);
 			break;
 		}
 		wrefresh(app->cmd);
-	} while((ch = getch()) != 10);
+	}
 
 	curs_set(0);
+	return 0;
+}
+
+
+int shell_mode(tdirlist* d, tree_app* app, cmd_t* command)
+{
+	tfile* f = get_cur_tfile(d);
+	char cmd[PATH_MAX+256];
+	snprintf(cmd, PATH_MAX+256, "%s %s", command->cmd, f->fullpath);
+	def_prog_mode();		/* Save the tty modes		  */
+	endwin();			/* End curses mode temporarily	  */
+	system(cmd);
+	reset_prog_mode();		/* Return to the previous tty mode*/
+	refresh_app(app);
 	return 0;
 }
 
@@ -291,9 +306,21 @@ e_browser_acts kbd_events(tdirlist** d, tree_app* app)
 			break;
 
 			case ':':
+			mvwaddch(app->cmd, 0, 0, ch);
 			cmd_mode(&command, app);
-			if (strcmp(command.cmd, ":q")==0)
+			if (strcmp(command.cmd, "q")==0)
 				return EXIT;
+			cmd_clear(&command);
+			ch = '\0';
+			break;
+
+			case '$':
+			mvwaddch(app->cmd, 0, 0, ch);
+			cmd_mode(&command, app);
+			if (strcmp(command.cmd, "q")==0)
+				return EXIT;
+			else
+				shell_mode(*d, app, &command);
 			cmd_clear(&command);
 			ch = '\0';
 			break;
