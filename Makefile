@@ -9,7 +9,7 @@ ifeq ($(OS),Windows_NT)
 	APP=treefm.exe
 	INCLUDES=-I..\PDCursesMod
 	LIBFLAGS=..\PDCursesMod\wincon\pdcurses.a -lwinmm -lm
-	CLEAN=del *.o $(APP)
+	CLEAN=cmd //c del *.o $(APP)
 else
 	APP=treefm
 	INCLUDES=
