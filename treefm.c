@@ -66,39 +66,39 @@ void show_row(tfile* f, WINDOW* win, int curr, int curc, int maxc)
 }
 
 
-void show_tdirlist(tdirlist* d, tree_app* app)
+void show_tdirlist(tdirlist* tdir, tree_app* app)
 {
 	erase_app(app);
 
 	int maxc = app->brw_props.cols - (2*app->brw_props.padc);
 	int curc = app->brw_props.startc + app->brw_props.padc;
 
-	int visible_rows = iMIN(app->brw_props.rows, d->files_count);
+	int visible_rows = iMIN(app->brw_props.rows, tdir->files_count);
 	for (int r=0; r < visible_rows; r++)
-		show_row(&d->files[r], app->browser, r, curc, maxc);
+		show_row(&tdir->files[r], app->browser, r, curc, maxc);
 
 	mvwchgat(app->browser, app->brw_props.curs_pos, 0,
 		-1, A_REVERSE|A_BOLD,
-		get_tfile_colorpair(d, d->curs_pos), NULL);
+		get_tfile_colorpair(tdir, tdir->curs_pos), NULL);
 
-	if (app->brw_props.rows < d->files_count) {
+	if (app->brw_props.rows < tdir->files_count) {
 		scrollok(app->browser, true); // allows browser (main) window to scroll
 	}
 
-	write_header(app, d->cwd, LEFT);
-	// write_footer(app, d->cwd, LEFT);
+	write_header(app, tdir->cwd, LEFT);
+	// write_footer(app, tdir->cwd, LEFT);
 	char count[10];
-	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
+	snprintf(count, 10, "%d/%d", tdir->curs_pos+1, tdir->files_count);
 	write_cmd(app, count, RIGHT);
-	prv_show_preview(d, app);
+	prv_show_preview(tdir, app);
 }
 
 
 
-void vnavigate(tdirlist* d, tree_app* app, e_vertical direction, int step)
+void vnavigate(tdirlist* tdir, tree_app* app, e_vertical direction, int step)
 {
 	// reset color highlight on current position
-	int cp = get_tfile_colorpair(d, d->curs_pos);
+	int cp = get_tfile_colorpair(tdir, tdir->curs_pos);
 	int gatp = A_NORMAL;
 
 	if (cp!=NORM_COLOR)
@@ -108,73 +108,73 @@ void vnavigate(tdirlist* d, tree_app* app, e_vertical direction, int step)
 	for (int i=1; i<=step; i++) {
 		if (direction==DOWN) {
 			if (app->brw_props.curs_pos + SCROLL_OFFSET + 1 >= app->brw_props.rows
-				&& (d->files_count-1) - d->curs_pos > SCROLL_OFFSET) { // need to scroll down
+				&& (tdir->files_count-1) - tdir->curs_pos > SCROLL_OFFSET) { // need to scroll down
 				wscrl(app->browser, 1);
 				// write a new row
-				int edge_idx = d->curs_pos + SCROLL_OFFSET + 1;
+				int edge_idx = tdir->curs_pos + SCROLL_OFFSET + 1;
 				int maxc = app->brw_props.cols - (2*app->brw_props.padc);
 				int curc = app->brw_props.startc + app->brw_props.padc;
-				show_row(&d->files[edge_idx], app->browser, app->brw_props.rows-1, curc, maxc);
+				show_row(&tdir->files[edge_idx], app->browser, app->brw_props.rows-1, curc, maxc);
 
 			} else {
 				// not scrolling. move cursor down
 				app->brw_props.curs_pos = iMIN(
-					iMIN(app->brw_props.curs_pos + 1, (d->files_count - 1)), // files count limit for short lists
+					iMIN(app->brw_props.curs_pos + 1, (tdir->files_count - 1)), // files count limit for short lists
 					app->brw_props.rows-1 // browser last row
 				);
 			}
-			d->curs_pos = iMIN(d->curs_pos + 1, (d->files_count - 1)); // increment file pointer pos
+			tdir->curs_pos = iMIN(tdir->curs_pos + 1, (tdir->files_count - 1)); // increment file pointer pos
 		}
 		else {
 			if (app->brw_props.curs_pos - SCROLL_OFFSET <= 0
-				&& d->curs_pos > app->brw_props.curs_pos) { // need to scroll up
+				&& tdir->curs_pos > app->brw_props.curs_pos) { // need to scroll up
 				wscrl(app->browser, -1);
 				// write a new row
-				int edge_idx = d->curs_pos - app->brw_props.curs_pos - 1;
+				int edge_idx = tdir->curs_pos - app->brw_props.curs_pos - 1;
 				int maxc = app->brw_props.cols - (2*app->brw_props.padc);
 				int curc = app->brw_props.startc + app->brw_props.padc;
-				show_row(&d->files[edge_idx], app->browser, 0, curc, maxc);
+				show_row(&tdir->files[edge_idx], app->browser, 0, curc, maxc);
 
 			} else {
 				// not scrolling. move cursor up
 				app->brw_props.curs_pos = iMAX(app->brw_props.curs_pos - 1, 0);
 			}
-			d->curs_pos = iMAX(d->curs_pos - 1, 0); // decrement file pointer pos
+			tdir->curs_pos = iMAX(tdir->curs_pos - 1, 0); // decrement file pointer pos
 		}
 	}
 
 	mvwchgat(app->browser, app->brw_props.curs_pos, 0,
 		-1, A_REVERSE|A_BOLD,
-		get_tfile_colorpair(d, d->curs_pos), NULL); // highlight new cursor position
+		get_tfile_colorpair(tdir, tdir->curs_pos), NULL); // highlight new cursor position
 
 	char count[10];
-	snprintf(count, 10, "%d/%d", d->curs_pos+1, d->files_count);
+	snprintf(count, 10, "%d/%d", tdir->curs_pos+1, tdir->files_count);
 	write_cmd(app, count, RIGHT);
-	prv_show_preview(d, app);
+	prv_show_preview(tdir, app);
 }
 
 
-void hnavigate(tdirlist** d, tree_app* app, e_horizontal direction)
+void hnavigate(tdirlist** tdir, tree_app* app, e_horizontal direction)
 {
 	if (direction==RIGHT) {
-		tfile* curfile = get_cur_tfile(*d);
-		// tfile curfile = (*d)->files[ (*d)->curs_pos ];
+		tfile* curfile = get_cur_tfile(*tdir);
+		// tfile curfile = (*tdir)->files[ (*tdir)->curs_pos ];
 		if (curfile->isdir)
 		{
 			tdirlist* new_d = listdir((const char*)curfile->fullpath);
 			write_header(app, strerror(new_d->err), RIGHT);
 			if (new_d->err==0) {
-				free_tdirlist(*d);
-				*d = new_d;
+				free_tdirlist(*tdir);
+				*tdir = new_d;
 				app->brw_props.curs_pos = 0; // reset cursor to top. TODO - parse path and move to directory
-				show_tdirlist(*d, app);
+				show_tdirlist(*tdir, app);
 			}
 			else {
 				free_tdirlist(new_d);
 			}
 		}
 	}
-	prv_show_preview(*d, app);
+	prv_show_preview(*tdir, app);
 }
 
 
@@ -246,9 +246,9 @@ int cmd_mode(cmd_t* m, tree_app* app)
 }
 
 
-int shell_mode(tdirlist* d, tree_app* app, cmd_t* command)
+int shell_mode(tdirlist* tdir, tree_app* app, cmd_t* command)
 {
-	tfile* f = get_cur_tfile(d);
+	tfile* f = get_cur_tfile(tdir);
 	char cmd[PATH_MAX+256];
 	snprintf(cmd, PATH_MAX+256, "%s %s", command->cmd, f->fullpath);
 	def_prog_mode();		/* Save the tty modes		  */
@@ -260,7 +260,7 @@ int shell_mode(tdirlist* d, tree_app* app, cmd_t* command)
 }
 
 
-e_browser_acts kbd_events(tdirlist** d, tree_app* app)
+e_browser_acts kbd_events(tdirlist** tdir, tree_app* app)
 {
 	cmd_t command = {'\0', "", 0};
 
@@ -281,7 +281,7 @@ e_browser_acts kbd_events(tdirlist** d, tree_app* app)
 
 			case KEY_RIGHT:
 			case 'l':
-			hnavigate(d, app, RIGHT);
+			hnavigate(tdir, app, RIGHT);
 			cmd_clear(&command);
 			break;
 
@@ -289,7 +289,7 @@ e_browser_acts kbd_events(tdirlist** d, tree_app* app)
 			case 'k':
 			n = cmd_getint(&command);
 			if (n < 0) n = 1;
-			vnavigate(*d, app, UP, n);
+			vnavigate(*tdir, app, UP, n);
 			cmd_clear(&command);
 			break;
 
@@ -297,7 +297,7 @@ e_browser_acts kbd_events(tdirlist** d, tree_app* app)
 			case 'j':
 			n = cmd_getint(&command);
 			if (n < 0) n = 1;
-			vnavigate(*d, app, DOWN, n);
+			vnavigate(*tdir, app, DOWN, n);
 			cmd_clear(&command);
 			break;
 
@@ -320,7 +320,7 @@ e_browser_acts kbd_events(tdirlist** d, tree_app* app)
 			if (strcmp(command.cmd, "q")==0)
 				return EXIT;
 			else
-				shell_mode(*d, app, &command);
+				shell_mode(*tdir, app, &command);
 			cmd_clear(&command);
 			ch = '\0';
 			break;
@@ -337,26 +337,26 @@ e_browser_acts kbd_events(tdirlist** d, tree_app* app)
 
 int main(int argc, char* argv[])
 {
-	const char* p;
+	const char* start_path;
 	if (argc>1)
-		p = argv[1];
+		start_path = argv[1];
 	else
-		p = ".";
+		start_path = ".";
 
-	tdirlist* d = listdir(p);
-	d->curs_pos = 0; //cursor position on top of the list
+	tdirlist* tdir = listdir(start_path);
+	tdir->curs_pos = 0; //cursor position on top of the list
 
 	tree_app app;
 	create_app(&app);
 
-	show_tdirlist(d, &app);
+	show_tdirlist(tdir, &app);
 	refresh_app(&app);
 
 	int action;
 	bool exit = false;
 	while (!exit)
 	{
-		action = kbd_events(&d, &app);
+		action = kbd_events(&tdir, &app);
 		switch (action)
 		{
 			case EXIT:
@@ -365,12 +365,12 @@ int main(int argc, char* argv[])
 
 			case RESIZE:
 			resize_app(&app);
-			show_tdirlist(d, &app);
+			show_tdirlist(tdir, &app);
 			refresh_app(&app);
 			break;
 		}
 	}
 	destroy_app(&app);
-	free_tdirlist(d);
+	free_tdirlist(tdir);
 
 }
