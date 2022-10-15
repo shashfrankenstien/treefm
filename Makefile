@@ -5,7 +5,7 @@ LIBFLAGS=
 CLEAN=
 
 ifeq ($(OS),Windows_NT)
-	DEPS=(cd vendor && make deps)
+	DEPS=cd vendor && make
 	APP=treefm.exe
 	INCLUDES=-I.\vendor\pdcursesmod
 	LIBFLAGS=.\vendor\pdcursesmod\wincon\pdcurses.a -lwinmm -lm
