@@ -1,21 +1,28 @@
-all: build
+all: deps build
 
+DEPS=
 APP=
 INCLUDES=
 LIBFLAGS=
 CLEAN=
 
 ifeq ($(OS),Windows_NT)
+	DEPS=(cd vendor && make deps)
 	APP=treefm.exe
-	INCLUDES=-I..\PDCursesMod
-	LIBFLAGS=..\PDCursesMod\wincon\pdcurses.a -lwinmm -lm
-	CLEAN=cmd //c del *.o $(APP)
+	INCLUDES=-I.\vendor\pdcursesmod
+	LIBFLAGS=.\vendor\pdcursesmod\wincon\pdcurses.a -lwinmm -lm
+	CLEAN=del *.o $(APP)
 else
+	DEPS=(ls)
 	APP=treefm
 	INCLUDES=
 	LIBFLAGS=-lncurses -lm
 	CLEAN=rm *.o $(APP) 2> /dev/null || true
 endif
+
+
+deps:
+	$(DEPS)
 
 build: dirlist.o ui.o preview.o treefm.c
 	gcc -Wall -g -o $(APP) $^ $(INCLUDES) $(LIBFLAGS)
@@ -32,4 +39,4 @@ preview.o: preview.c
 clean:
 	$(CLEAN)
 
-.PHONY: all build clean
+.PHONY: all deps build clean
