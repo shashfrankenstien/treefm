@@ -1,5 +1,3 @@
-all: deps build
-
 DEPS=
 APP=
 INCLUDES=
@@ -13,13 +11,13 @@ ifeq ($(OS),Windows_NT)
 	LIBFLAGS=.\vendor\pdcursesmod\wincon\pdcurses.a -lwinmm -lm
 	CLEAN=del *.o $(APP)
 else
-	DEPS=(ls)
 	APP=treefm
 	INCLUDES=
 	LIBFLAGS=-lncurses -lm
 	CLEAN=rm *.o $(APP) 2> /dev/null || true
 endif
 
+all: deps build
 
 deps:
 	$(DEPS)

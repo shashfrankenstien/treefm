@@ -1,19 +1,23 @@
-all: pdcursesmod
+DEPS=
+WINCON=
+CLEAN=
+
+ifeq ($(OS),Windows_NT)
+	DEPS=pdcursesmod
+	WINCON=(git clone https://github.com/Bill-Gray/PDCursesMod.git $(DEPS) && cd $(DEPS)\wincon && make)
+	CLEAN=(rmdir /s /q $(DEPS))
+endif
 
 
-pdcursesmod:
-	git clone https://github.com/Bill-Gray/PDCursesMod.git $@
+all: $(DEPS)
 
 
-wincon: pdcursesmod
-	cd $^\$@ && make
-
-
-deps: wincon
+$(DEPS):
+	$(WINCON)
 
 
 clean:
-	rmdir /s /q pdcursesmod
+	$(CLEAN)
 
 
-.PHONY: all deps clean wincon
+.PHONY: all clean
